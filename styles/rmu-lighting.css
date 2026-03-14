@@ -1,0 +1,101 @@
+/* ===================================================================
+   --- RMU LIGHTING & VISION STYLES ---
+   Utilises variables from filroden-theme.css
+=================================================================== */
+
+/* --- 1. Chat Card Formatting --- */
+.rmu-lighting-chat {
+    background-color: var(--filroden-color-bg-darkest);
+    border: var(--filroden-border-main);
+    border-radius: var(--filroden-radius-medium);
+    color: var(--filroden-color-text-main);
+    font-family: var(--filroden-font-family);
+    box-shadow: var(--filroden-shadow-card);
+    overflow: hidden;
+}
+
+.rmu-lighting-chat .rmu-chat-header {
+    background-color: var(--filroden-color-bg-medium-solid);
+    padding: var(--filroden-space-s) var(--filroden-space-m);
+    border-bottom: 2px solid var(--filroden-color-text-accent);
+}
+
+.rmu-lighting-chat .rmu-chat-header h3 {
+    margin: 0;
+    color: var(--filroden-color-text-accent);
+    font-weight: var(--filroden-font-weight-bold);
+    letter-spacing: var(--filroden-letter-spacing-wide);
+    border: none; /* Overrides core Foundry chat header borders */
+}
+
+.rmu-lighting-chat .rmu-chat-body {
+    padding: var(--filroden-space-m);
+}
+
+.rmu-lighting-chat .rmu-chat-body p {
+    margin: 0 0 var(--filroden-space-xs) 0;
+}
+
+.rmu-lighting-chat .rmu-vision-note {
+    color: var(--filroden-color-text-muted);
+    font-size: var(--filroden-font-size-s);
+    margin-top: var(--filroden-space-s);
+    text-align: center;
+}
+
+.rmu-lighting-chat hr {
+    border: none;
+    border-top: var(--filroden-border-main);
+    margin: var(--filroden-space-m) 0;
+}
+
+.rmu-lighting-chat .rmu-penalty-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--filroden-space-m);
+}
+
+.rmu-lighting-chat .penalty-box {
+    flex: 1;
+    background-color: var(--filroden-color-bg-light);
+    border: var(--filroden-border-dashed);
+    border-radius: var(--filroden-radius-small);
+    padding: var(--filroden-space-s);
+    text-align: center;
+}
+
+.rmu-lighting-chat .penalty-label {
+    display: block;
+    font-size: var(--filroden-font-size-xs);
+    color: var(--filroden-color-text-placeholder);
+    text-transform: uppercase;
+    letter-spacing: var(--filroden-letter-spacing-wide);
+}
+
+.rmu-lighting-chat .penalty-value {
+    display: block;
+    font-size: var(--filroden-font-size-xl);
+    color: var(--filroden-color-text-accent);
+    font-weight: var(--filroden-font-weight-bold);
+    text-shadow: var(--filroden-shadow-text);
+}
+
+
+/* --- 2. ApplicationV2 UI Injection Formatting --- */
+/* We keep this minimal so we do not fight Foundry's core ApplicationV2 form layout, 
+   but we apply the Filroden accent to the legend and hints for visual cohesion. */
+
+.rmu-light-settings legend {
+    color: var(--filroden-color-text-accent);
+    border-bottom: var(--filroden-border-main);
+    padding-bottom: var(--filroden-space-xxs);
+    margin-bottom: var(--filroden-space-s);
+    width: 100%;
+    font-family: var(--filroden-font-family);
+    letter-spacing: var(--filroden-letter-spacing-wide);
+}
+
+.rmu-light-settings .notes {
+    color: var(--filroden-color-text-muted);
+    font-size: var(--filroden-font-size-s);
+}

@@ -1,0 +1,21 @@
+<fieldset class="form-group rmu-light-settings">
+    <legend>{{localize "rmu.light.settingsHeader"}}</legend>
+
+    <div class="form-group">
+        <label>{{localize "rmu.light.baseIllumination"}}</label>
+        <div class="form-fields">
+            <select name="flags.rmu-lighting-vision.baseIllumination">
+                {{selectOptions baseIlluminationOptions selected=currentBase}}
+            </select>
+        </div>
+        <p class="notes">{{localize "rmu.light.baseIlluminationHint"}}</p>
+    </div>
+
+    <div class="form-group">
+        <label>{{localize "rmu.light.isMagical"}}</label>
+        <div class="form-fields">
+            <input type="checkbox" name="flags.rmu-lighting-vision.isMagical" {{checked isMagical}} />
+        </div>
+        <p class="notes">{{localize "rmu.light.isMagicalHint"}}</p>
+    </div>
+</fieldset>
