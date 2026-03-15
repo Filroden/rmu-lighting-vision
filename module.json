@@ -1,7 +1,7 @@
 {
     "id": "rmu-lighting-vision",
     "title": "RMU Lighting and Vision",
-    "description": "",
+    "description": "The RMU Lighting and Vision module automates the environmental penalties defined in Rolemaster Unified (RMU) Core Law Table 15-7.",
     "version": "1.0.0",
     "compatibility": { "minimum": "13", "verified": "13.351" },
     "authors": [{ "name": "Ken Dearman" }],

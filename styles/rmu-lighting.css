@@ -34,6 +34,7 @@
 
 .rmu-lighting-chat .rmu-chat-body p {
     margin: 0 0 var(--filroden-space-xs) 0;
+    color: var(--filroden-color-text-main);
 }
 
 .rmu-lighting-chat .rmu-vision-note {
@@ -82,8 +83,6 @@
 
 
 /* --- 2. ApplicationV2 UI Injection Formatting --- */
-/* We keep this minimal so we do not fight Foundry's core ApplicationV2 form layout, 
-   but we apply the Filroden accent to the legend and hints for visual cohesion. */
 
 .rmu-light-settings legend {
     color: var(--filroden-color-text-accent);
@@ -95,7 +94,35 @@
     letter-spacing: var(--filroden-letter-spacing-wide);
 }
 
+/* Override Foundry's default row layout to allow the hint text to wrap */
+.rmu-light-settings .form-group {
+    flex-wrap: wrap; 
+}
+
+/* Force the hint text to take up the full width below the inputs and apply a readable dark colour */
 .rmu-light-settings .notes {
-    color: var(--filroden-color-text-muted);
+    flex-basis: 100%;
+    margin-top: 0.25rem;
+    color: var(--color-text-dark-secondary, #4b4a44); /* Utilises Foundry's native variable for pale sheets */
     font-size: var(--filroden-font-size-s);
+}
+
+/* --- 3. Core Foundry Chat Wrapper Overrides --- */
+/* Targets the native VTT chat message container only when our specific module card is present */
+
+.chat-message:has(.rmu-lighting-chat) {
+    border: 1px solid var(--filroden-color-text-accent) !important;
+}
+
+.chat-message:has(.rmu-lighting-chat)::before {
+    background: none !important;
+}
+
+.chat-message:has(.rmu-lighting-chat) .message-header {
+    color: var(--filroden-color-text-on-accent);
+}
+
+.chat-message:has(.rmu-lighting-chat) .message-content {
+    margin: 0 !important;
+    padding: 0 !important;
 }

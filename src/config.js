@@ -14,14 +14,18 @@ export const RMU_LIGHT_LEVELS = {
 
 /**
  * Initialises custom canvas vision modes for RMU characters.
- * This hooks directly into Foundry's rendering engine to visually represent
- * the sensory mechanics without altering the underlying light data.
+ * Hooks directly into Foundry's rendering engine.
  */
 export function registerVisionModes() {
+    // Map to the modern V13 namespaces
+    const VisionMode = foundry.canvas.perception.VisionMode;
+    const ColorAdjustmentsSamplerShader = foundry.canvas.rendering.shaders.ColorAdjustmentsSamplerShader;
+    const LIGHTING_LEVELS = CONST.LIGHTING_LEVELS;
+
     // Nightvision: Elevates dim areas visually, but relies on some ambient light existing.
     CONFIG.Canvas.visionModes.nightvision = new VisionMode({
         id: "nightvision",
-        label: "rmu.vision.nightvision", // Localised label for the token sheet dropdown
+        label: "rmu.vision.nightvision",
         canvas: {
             shader: ColorAdjustmentsSamplerShader,
             uniforms: { contrast: 0.1, saturation: -0.5, brightness: 0.2 },
@@ -29,7 +33,7 @@ export function registerVisionModes() {
         lighting: {
             levels: {
                 // Mechanically, it reduces penalties. Visually, we brighten Dim to Bright for the player.
-                [VISION_LEVELS.DIM]: VISION_LEVELS.BRIGHT,
+                [LIGHTING_LEVELS.DIM]: LIGHTING_LEVELS.BRIGHT,
             },
         },
         vision: {
@@ -44,14 +48,14 @@ export function registerVisionModes() {
         label: "rmu.vision.darkvision",
         canvas: {
             shader: ColorAdjustmentsSamplerShader,
-            uniforms: { contrast: 0, saturation: -1.0, brightness: 0 }, // Desaturates for thematic effect
+            uniforms: { contrast: 0, saturation: -1.0, brightness: 0 },
         },
         lighting: {
-            background: { visibility: VISION_LEVELS.BRIGHT },
+            background: { visibility: LIGHTING_LEVELS.BRIGHT },
             levels: {
                 // Darkvision completely negates all darkness visually on the canvas
-                [VISION_LEVELS.DIM]: VISION_LEVELS.BRIGHT,
-                [VISION_LEVELS.UNLIT]: VISION_LEVELS.BRIGHT,
+                [LIGHTING_LEVELS.DIM]: LIGHTING_LEVELS.BRIGHT,
+                [LIGHTING_LEVELS.UNLIT]: LIGHTING_LEVELS.BRIGHT,
             },
         },
         vision: {

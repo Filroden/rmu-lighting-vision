@@ -1,11 +1,10 @@
 /**
  * Generates a chat message displaying lighting penalties for a specific target.
- * Utilises a preloaded Handlebars template for the UI layout.
  * @param {TokenDocument} sourceDoc - The token observing.
- * @param {TokenDocument} targetDoc - The token being observed.
+ * @param {string} targetName - The name of the target token or the canvas coordinates.
  * @param {Object} state - The lighting state object returned by the calculator.
  */
-export async function outputLightingToChat(sourceDoc, targetDoc, state) {
+export async function outputLightingToChat(sourceDoc, targetName, state) {
     // Map the numerical tiers to their respective localisation keys
     const tierLabels = {
         0: "rmu.light.tiers.bright",
@@ -28,8 +27,9 @@ export async function outputLightingToChat(sourceDoc, targetDoc, state) {
     // Construct the data payload for the Handlebars template
     const templateData = {
         observerName: sourceDoc.name,
-        targetName: targetDoc.name,
-        conditionLabel: tierLabels[state.tier],
+        targetName: targetName,
+        hasLineOfSight: state.hasLineOfSight,
+        conditionLabel: state.hasLineOfSight ? tierLabels[state.tier] : "",
         activeVision: activeVision,
         penaltyFull: state.penaltyFull,
         penaltyHalf: state.penaltyHalf,
@@ -37,7 +37,7 @@ export async function outputLightingToChat(sourceDoc, targetDoc, state) {
 
     // Render the HTML using the preloaded template
     const templatePath = "modules/rmu-lighting-vision/templates/chat-message.hbs";
-    const htmlContent = await renderTemplate(templatePath, templateData);
+    const htmlContent = await foundry.applications.handlebars.renderTemplate(templatePath, templateData);
 
     // Dispatch the formatted message to the VTT chat log
     await ChatMessage.create({

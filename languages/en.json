@@ -18,6 +18,7 @@
     "rmu.chat.condition": "Lighting Condition",
     "rmu.chat.sightRequired": "Sight Required",
     "rmu.chat.sightHelpful": "Sight Helpful",
+    "rmu.chat.noLineOfSight": "No Line of Sight to Target",
 
     "rmu.light.settingsHeader": "RMU Lighting Settings",
     "rmu.light.baseIllumination": "Base Illumination",

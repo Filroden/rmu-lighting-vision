@@ -30,52 +30,43 @@ function getDegradedTier(distance, baseIllumination, isMagical) {
 }
 
 /**
- * Iterates over all light sources in the scene to find the best illumination for a target.
- * Accounts for standard lights, token-emitted lights, and negative luminosity (darkness).
- * @param {TokenDocument} targetDoc - The token being illuminated.
- * @returns {number} The lowest (brightest) light tier affecting the target.
+ * Iterates over all light sources to find the best illumination for a specific point.
+ * @param {Object} targetPoint - The {x, y} coordinates being illuminated.
+ * @returns {number} The lowest (brightest) light tier affecting the point.
  */
-function getBestIlluminationTier(targetDoc) {
-    const targetCenter = targetDoc.object.center;
+function getBestIlluminationTier(targetPoint) {
     let bestTier = RMU_LIGHT_LEVELS.PITCH_BLACK;
     let inMagicalDarkness = false;
 
-    // Combine ambient lights and token-emitted lights
     const allLightDocs = [...canvas.scene.lights, ...canvas.scene.tokens.filter((t) => t.light.active)];
 
     for (const lightDoc of allLightDocs) {
-        // Extract custom RMU flags, defaulting to Bright Light (0) and Non-Magical
-        const rmuFlags = lightDoc.flags?.rmu || {};
+        const rmuFlags = lightDoc.flags?.["rmu-lighting-vision"] || {};
         const baseIllumination = rmuFlags.baseIllumination ?? RMU_LIGHT_LEVELS.BRIGHT;
         const isMagical = rmuFlags.isMagical ?? false;
-
-        // Foundry stores negative light (darkness) via luminosity < 0
         const isDarknessSource = (lightDoc.config?.luminosity ?? lightDoc.light?.luminosity) < 0;
 
-        // Calculate grid distance using Foundry v12+ geometry standards
         const lightCenter = lightDoc.object ? lightDoc.object.center : { x: lightDoc.x, y: lightDoc.y };
-        const path = canvas.grid.measurePath([targetCenter, lightCenter]);
+
+        // 1. LIGHT COLLISION: Does a wall block this light from reaching the target point?
+        const blocksLight = CONFIG.Canvas.polygonBackends.light.testCollision(targetPoint, lightCenter, { type: "light", mode: "any" });
+        if (blocksLight) continue; // Skip this light source entirely
+
+        const path = canvas.grid.measurePath([targetPoint, lightCenter]);
         const distance = path.distance;
 
-        // Skip if the target is entirely outside this light's maximum configured VTT radius
         const maxRadius = Math.max(lightDoc.config?.dim || 0, lightDoc.config?.bright || 0, lightDoc.light?.dim || 0, lightDoc.light?.bright || 0);
         if (distance > maxRadius) continue;
 
         if (isDarknessSource) {
             inMagicalDarkness = true;
-            continue; // We process darkness overrides at the end
+            continue;
         }
 
         const calculatedTier = getDegradedTier(distance, baseIllumination, isMagical);
-
-        // Lower tier integer means brighter light. Keep the brightest available.
-        if (calculatedTier < bestTier) {
-            bestTier = calculatedTier;
-        }
+        if (calculatedTier < bestTier) bestTier = calculatedTier;
     }
 
-    // If the target is within a negative light source, override the standard lighting.
-    // In RMU, magical darkness acts as an extremely dark night (Tier 5)[cite: 21].
     if (inMagicalDarkness) {
         bestTier = Math.max(bestTier, RMU_LIGHT_LEVELS.EXTREMELY_DARK);
     }
@@ -137,40 +128,49 @@ function getActorVisionCapabilities(actor) {
 }
 
 /**
- * Public API method: Analyses the canvas to determine the lighting state and penalties.
+ * Public API method: Analyses the canvas to determine the lighting state.
+ * @param {TokenDocument} sourceDoc - The token observing.
+ * @param {Object|TokenDocument} target - The token OR {x, y} point being observed.
  */
-export function determineLightingState(sourceDoc, targetDoc) {
-    // 1. Read the active VTT vision mode, range, AND the actual RMU Actor sheet
+export function determineLightingState(sourceDoc, target) {
+    const sourceCenter = sourceDoc.object ? sourceDoc.object.center : { x: sourceDoc.x, y: sourceDoc.y };
+    const targetPoint = target.object ? target.object.center : target.x !== undefined ? target : { x: target.x, y: target.y };
+
+    // 2. SIGHT COLLISION: Does a wall block the observer from seeing the target point?
+    const blocksSight = CONFIG.Canvas.polygonBackends.sight.testCollision(sourceCenter, targetPoint, { type: "sight", mode: "any" });
+
+    const path = canvas.grid.measurePath([sourceCenter, targetPoint]);
+    const distanceToTarget = path.distance;
+
+    // If a wall is in the way, immediately abort calculation and return the failure state
+    if (blocksSight) {
+        return {
+            hasLineOfSight: false,
+            distance: distanceToTarget,
+        };
+    }
+
     const visionMode = sourceDoc.sight?.visionMode;
     const visionRange = sourceDoc.sight?.range || 0;
     const nativeVision = getActorVisionCapabilities(sourceDoc.actor);
 
-    // They have the vision if it's visually active OR mechanically present on their sheet
     let hasNightvision = visionMode === "nightvision" || nativeVision.hasNativeNightvision;
     let hasDarkvision = visionMode === "darkvision" || nativeVision.hasNativeDarkvision;
 
-    // 2. Calculate the distance between observer and target
-    const sourceCenter = sourceDoc.object ? sourceDoc.object.center : { x: sourceDoc.x, y: sourceDoc.y };
-    const targetCenter = targetDoc.object ? targetDoc.object.center : { x: targetDoc.x, y: targetDoc.y };
-    const path = canvas.grid.measurePath([sourceCenter, targetCenter]);
-    const distanceToTarget = path.distance;
-
-    // 3. Enforce Darkvision Range Limits & Fallback
     if (hasDarkvision && distanceToTarget > visionRange) {
         hasDarkvision = false;
-        // If Darkvision fails, hasNightvision remains true if they natively possess it!
     }
 
-    // 4. Determine baseline tier and calculate final penalties
-    const tier = getBestIlluminationTier(targetDoc);
+    const tier = getBestIlluminationTier(targetPoint);
     const { penaltyFull, penaltyHalf } = calculatePenalties(tier, hasNightvision, hasDarkvision);
 
     return {
-        tier: tier,
-        hasNightvision: hasNightvision,
-        hasDarkvision: hasDarkvision,
-        penaltyFull: penaltyFull,
-        penaltyHalf: penaltyHalf,
+        tier,
+        hasNightvision,
+        hasDarkvision,
+        penaltyFull,
+        penaltyHalf,
         distance: distanceToTarget,
+        hasLineOfSight: true,
     };
 }

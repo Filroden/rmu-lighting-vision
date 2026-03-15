@@ -11,7 +11,7 @@
 
 ## Overview
 
-The **RMU Lighting and Vision** module automates the environmental penalties defined in Rolemaster Unified (RMU) Table 15-7.
+The **RMU Lighting and Vision** module automates the environmental penalties defined in Rolemaster Unified (RMU) Core Law Table 15-7.
 
 Rather than modifying Foundry VTT's complex WebGL rendering engine, this module acts as a spatial mechanical sensor. It natively reads the canvas geometry, calculates light degradation over distance, checks the observer's vision traits, and outputs the precise mechanical penalties required for manoeuvres and perception checks.
 
