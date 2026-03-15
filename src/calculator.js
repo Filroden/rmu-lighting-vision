@@ -2,32 +2,46 @@ import { RMU_LIGHT_LEVELS } from "./config.js";
 import { getActorVisionCapabilities } from "./vision-parser.js";
 
 /**
- * Calculates the exact RMU lighting tier based on distance from the source.
- * @param {number} distance - The grid distance in feet.
- * @param {number} baseIllumination - The starting tier of the light source (0-6).
+ * Calculates the degraded light tier based on physical distance.
+ * @param {number} distance - The distance in feet from the light source.
+ * @param {number} baseTier - The starting illumination tier (0 to 6).
  * @param {boolean} isMagical - Whether the light source is magical.
- * @returns {number} The degraded lighting tier (0-6).
+ * @param {number} maxRadius - The maximum illuminated radius of the source.
+ * @returns {number} The final degraded illumination tier.
  */
-function getDegradedTier(distance, baseIllumination, isMagical) {
-    // If the GM configured magical light not to degrade, return the base illumination up to its max radius.
-    // We assume the maximum radius is handled by the VTT's token vision cut-off before this function is called.
-    const magicDegrades = game.settings.get("rmu-lighting-vision", "magicalLightDegrades");
-    if (isMagical && !magicDegrades) {
-        return baseIllumination;
+function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
+    let effectiveDistance = distance;
+    let effectiveBase = baseTier;
+
+    if (isMagical) {
+        // Inside the spell's radius, the light is perfect (diffuse/ambient)
+        if (distance <= maxRadius) return baseTier;
+
+        // Outside the radius, check the GM setting
+        const magicDegrades = game.settings.get("rmu-lighting-vision", "magicalLightDegrades");
+
+        if (!magicDegrades) {
+            return 6; // Strict mode: Hard edge, pitch black immediately beyond the radius
+        }
+
+        // Designer's Mode: Drops 2 levels immediately outside the boundary
+        effectiveBase = Math.min(baseTier + 2, 6);
+        // Shift the distance calculation so degradation starts at the edge of the spell, not the center
+        effectiveDistance = Math.max(0, distance - maxRadius);
     }
 
-    // Calculate degradation steps based on RMU distance brackets
-    let degradationSteps = 0;
-    if (distance > 100) {
-        degradationSteps = 3;
-    } else if (distance > 30) {
-        degradationSteps = 2;
-    } else if (distance > 10) {
-        degradationSteps = 1;
+    const thresholds = [10, 30, 100, 300, 1000, 3000];
+    let stepsDegraded = 0;
+
+    for (const threshold of thresholds) {
+        if (effectiveDistance > threshold) {
+            stepsDegraded++;
+        } else {
+            break;
+        }
     }
 
-    // Add the steps to the base tier, capping it at Pitch Black (6)
-    return Math.min(baseIllumination + degradationSteps, RMU_LIGHT_LEVELS.PITCH_BLACK);
+    return Math.min(effectiveBase + stepsDegraded, 6);
 }
 
 /**
@@ -47,35 +61,34 @@ function getBestIlluminationTier(targetPoint) {
         const isMagical = rmuFlags.isMagical ?? false;
         const isDarknessSource = (lightDoc.config?.luminosity ?? lightDoc.light?.luminosity) < 0;
 
-        // Safely extract the geometric center based on the specific document type
         let lightCenter;
         if (lightDoc.documentName === "Token") {
-            // Tokens have physical dimensions, so we grab their center
             lightCenter = lightDoc.object?.center || {
                 x: lightDoc.x + ((lightDoc.width || 1) * canvas.grid.size) / 2,
                 y: lightDoc.y + ((lightDoc.height || 1) * canvas.grid.size) / 2,
             };
         } else {
-            // Ambient lights are point sources; their x/y IS their center
             lightCenter = { x: lightDoc.x, y: lightDoc.y };
         }
 
-        // 1. LIGHT COLLISION: Does a wall block this light from reaching the target point?
         const blocksLight = CONFIG.Canvas.polygonBackends.light.testCollision(targetPoint, lightCenter, { type: "light", mode: "any" });
-        if (blocksLight) continue; // Skip this light source entirely
+        if (blocksLight) continue;
 
         const path = canvas.grid.measurePath([targetPoint, lightCenter]);
         const distance = path.distance;
-
         const maxRadius = Math.max(lightDoc.config?.dim || 0, lightDoc.config?.bright || 0, lightDoc.light?.dim || 0, lightDoc.light?.bright || 0);
-        if (distance > maxRadius) continue;
+
+        // Skip natural lights if the target is beyond their maximum reach
+        // We let magical lights pass this check so getDegradedTier can calculate the "bleed" if enabled
+        if (!isMagical && distance > maxRadius) continue;
 
         if (isDarknessSource) {
             inMagicalDarkness = true;
             continue;
         }
 
-        const calculatedTier = getDegradedTier(distance, baseIllumination, isMagical);
+        // Pass the maxRadius down into the calculator
+        const calculatedTier = getDegradedTier(distance, baseIllumination, isMagical, maxRadius);
         if (calculatedTier < bestTier) bestTier = calculatedTier;
     }
 

@@ -14,12 +14,11 @@ export function registerSettings() {
         type: Boolean,
         default: false, // Defaulting to false (magic doesn't degrade) until the official ruling
     });
-}
 
-export function registerSettings() {
+    // Toggle to enable or disable the automated RMU lighting calculations
     game.settings.register("rmu-lighting-vision", "enableLightingEngine", {
-        name: game.i18n.localize("rmu.settings.enableEngine.name"),
-        hint: game.i18n.localize("rmu.settings.enableEngine.hint"),
+        name: "rmu.settings.enableEngine.name",
+        hint: "rmu.settings.enableEngine.hint",
         scope: "world", // Only the GM can change this
         config: true,
         type: Boolean,

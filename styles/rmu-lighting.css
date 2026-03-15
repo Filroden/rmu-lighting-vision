@@ -89,14 +89,18 @@
     border-bottom: var(--filroden-border-main);
     padding-bottom: var(--filroden-space-xxs);
     margin-bottom: var(--filroden-space-s);
-    width: 100%;
     font-family: var(--filroden-font-family);
     letter-spacing: var(--filroden-letter-spacing-wide);
 }
 
 /* Override Foundry's default row layout to allow the hint text to wrap */
+.rmu-light-settings.form-group {
+    flex-direction: column;
+    flex-wrap: wrap;
+}
+
 .rmu-light-settings .form-group {
-    flex-wrap: wrap; 
+    flex-wrap: wrap;
 }
 
 /* Force the hint text to take up the full width below the inputs and apply a readable dark colour */
@@ -105,6 +109,10 @@
     margin-top: 0.25rem;
     color: var(--color-text-dark-secondary, #4b4a44); /* Utilises Foundry's native variable for pale sheets */
     font-size: var(--filroden-font-size-s);
+}
+
+.rmu-light-settings label {
+    line-height: normal;
 }
 
 /* --- 3. Core Foundry Chat Wrapper Overrides --- */
