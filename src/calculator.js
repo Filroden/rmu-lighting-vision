@@ -1,4 +1,5 @@
 import { RMU_LIGHT_LEVELS } from "./config.js";
+import { getActorVisionCapabilities } from "./vision-parser.js";
 
 /**
  * Calculates the exact RMU lighting tier based on distance from the source.
@@ -46,7 +47,18 @@ function getBestIlluminationTier(targetPoint) {
         const isMagical = rmuFlags.isMagical ?? false;
         const isDarknessSource = (lightDoc.config?.luminosity ?? lightDoc.light?.luminosity) < 0;
 
-        const lightCenter = lightDoc.object ? lightDoc.object.center : { x: lightDoc.x, y: lightDoc.y };
+        // Safely extract the geometric center based on the specific document type
+        let lightCenter;
+        if (lightDoc.documentName === "Token") {
+            // Tokens have physical dimensions, so we grab their center
+            lightCenter = lightDoc.object?.center || {
+                x: lightDoc.x + ((lightDoc.width || 1) * canvas.grid.size) / 2,
+                y: lightDoc.y + ((lightDoc.height || 1) * canvas.grid.size) / 2,
+            };
+        } else {
+            // Ambient lights are point sources; their x/y IS their center
+            lightCenter = { x: lightDoc.x, y: lightDoc.y };
+        }
 
         // 1. LIGHT COLLISION: Does a wall block this light from reaching the target point?
         const blocksLight = CONFIG.Canvas.polygonBackends.light.testCollision(targetPoint, lightCenter, { type: "light", mode: "any" });
@@ -109,22 +121,6 @@ function calculatePenalties(tier, hasNightvision, hasDarkvision) {
         penaltyFull: penalty,
         penaltyHalf: Math.ceil(penalty / 2), // Rounding toward zero for half penalties
     };
-}
-
-/**
- * Interrogates the RMU Actor document to see if they possess vision traits or active spells.
- * @param {Actor} actor - The actor document to check.
- * @returns {Object} { hasNativeNightvision, hasNativeDarkvision }
- */
-function getActorVisionCapabilities(actor) {
-    if (!actor) return { hasNativeNightvision: false, hasNativeDarkvision: false };
-
-    // Checking the actor's items for talents, traits, or active spells granting vision.
-    // The exact logic can be refined based on the RMU system's specific item types or flags.
-    const hasNativeNightvision = actor.items.some((i) => i.name.toLowerCase() === "nightvision");
-    const hasNativeDarkvision = actor.items.some((i) => i.name.toLowerCase() === "darkvision");
-
-    return { hasNativeNightvision, hasNativeDarkvision };
 }
 
 /**

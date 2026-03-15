@@ -3,6 +3,8 @@ import { registerSettings } from "./src/settings.js";
 import { determineLightingState } from "./src/calculator.js";
 import { outputLightingToChat } from "./src/chat.js";
 import "./src/ui.js";
+import "./src/light-sync.js";
+import "./src/vision-sync.js";
 
 /**
  * Primary initialisation hook for the RMU Lighting & Vision module.

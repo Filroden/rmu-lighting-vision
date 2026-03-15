@@ -1,6 +1,7 @@
 {
     "rmu.settings.magicalLightDegrades.name": "Magical Light Degrades",
     "rmu.settings.magicalLightDegrades.hint": "If enabled, magical light sources suffer the standard RMU distance degradation penalties. If disabled, they illuminate their full radius at their base tier.",
+    "rmu.settings.enableEngine.name": "Enable Automated Lighting Engine",
 
     "rmu.vision.nightvision": "Nightvision",
     "rmu.vision.darkvision": "Darkvision",
@@ -26,6 +27,7 @@
     "rmu.light.isMagical": "Magical Source",
     "rmu.light.isMagicalHint": "Flags this light as magical, allowing it to overcome standard magical darkness.",
 
+    "rmu.light.tiers.none": "None (Not a Light Source)",
     "rmu.light.tiers.bright": "Bright Light / No Shadows",
     "rmu.light.tiers.uneven": "Uneven Light / Light Shadows",
     "rmu.light.tiers.dim": "Dim Light / Medium Shadows",

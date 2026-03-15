@@ -1,3 +1,5 @@
+import { toggleLightingEngine } from "./migration.js";
+
 /**
  * Registers all module-specific settings in the Foundry VTT settings menu.
  * This should be called during the 'init' hook.
@@ -11,5 +13,20 @@ export function registerSettings() {
         config: true, // Expose this setting in the UI
         type: Boolean,
         default: false, // Defaulting to false (magic doesn't degrade) until the official ruling
+    });
+}
+
+export function registerSettings() {
+    game.settings.register("rmu-lighting-vision", "enableLightingEngine", {
+        name: game.i18n.localize("rmu.settings.enableEngine.name"),
+        hint: game.i18n.localize("rmu.settings.enableEngine.hint"),
+        scope: "world", // Only the GM can change this
+        config: true,
+        type: Boolean,
+        default: true,
+        onChange: (value) => {
+            // Trigger the world sweep whenever the GM toggles this setting
+            toggleLightingEngine(value);
+        },
     });
 }

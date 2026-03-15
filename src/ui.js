@@ -14,6 +14,7 @@ async function injectRMULightSettings(app, html, data) {
         currentBase: app.document.getFlag("rmu-lighting-vision", "baseIllumination") ?? 0,
         isMagical: app.document.getFlag("rmu-lighting-vision", "isMagical") ?? false,
         baseIlluminationOptions: {
+            "-1": game.i18n.localize("rmu.light.tiers.none"),
             0: game.i18n.localize("rmu.light.tiers.bright"),
             1: game.i18n.localize("rmu.light.tiers.uneven"),
             2: game.i18n.localize("rmu.light.tiers.dim"),
