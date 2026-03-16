@@ -11,11 +11,11 @@ import { getActorVisionCapabilities } from "./vision-parser.js";
  */
 function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
     let effectiveDistance = distance;
-    let effectiveBase = baseTier;
+    let effectiveBase = parseInt(baseTier, 10);
 
     if (isMagical) {
         // Inside the spell's radius, the light is perfect (diffuse/ambient)
-        if (distance <= maxRadius) return baseTier;
+        if (distance <= maxRadius) return effectiveBase;
 
         // Outside the radius, check the GM setting
         const magicDegrades = game.settings.get("rmu-lighting-vision", "magicalLightDegrades");
@@ -50,14 +50,33 @@ function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
  * @returns {number} The lowest (brightest) light tier affecting the point.
  */
 function getBestIlluminationTier(targetPoint) {
-    let bestTier = RMU_LIGHT_LEVELS.PITCH_BLACK;
+    // 1. Establish the baseline ambient light of the room/map based on the GM's darkness slider
+    let bestTier = 6;
+    if (canvas.scene) {
+        const darkness = canvas.scene.environment?.darknessLevel ?? canvas.scene.darkness;
+
+        if (darkness === 0) bestTier = 0;
+        else if (darkness <= 0.25) bestTier = 1;
+        else if (darkness <= 0.5) bestTier = 2;
+        else if (darkness <= 0.75) bestTier = 4;
+        else bestTier = 6;
+    }
+
     let inMagicalDarkness = false;
 
-    const allLightDocs = [...canvas.scene.lights, ...canvas.scene.tokens.filter((t) => t.light.active)];
+    // 2. Safely gather all active lights
+    const activeAmbientLights = canvas.scene.lights.filter((l) => !l.hidden);
+    const activeTokenLights = canvas.scene.tokens.filter((t) => !t.hidden && (t.light?.dim > 0 || t.light?.bright > 0));
+    const allLightDocs = [...activeAmbientLights, ...activeTokenLights];
 
     for (const lightDoc of allLightDocs) {
         const rmuFlags = lightDoc.flags?.["rmu-lighting-vision"] || {};
-        const baseIllumination = rmuFlags.baseIllumination ?? RMU_LIGHT_LEVELS.BRIGHT;
+
+        // 3. Parse the string and explicitly ignore tokens set to "-1" (None)
+        const rawTier = rmuFlags.baseIllumination ?? 0;
+        const baseIllumination = parseInt(rawTier, 10);
+        if (isNaN(baseIllumination) || baseIllumination === -1) continue;
+
         const isMagical = rmuFlags.isMagical ?? false;
         const isDarknessSource = (lightDoc.config?.luminosity ?? lightDoc.light?.luminosity) < 0;
 
@@ -78,8 +97,6 @@ function getBestIlluminationTier(targetPoint) {
         const distance = path.distance;
         const maxRadius = Math.max(lightDoc.config?.dim || 0, lightDoc.config?.bright || 0, lightDoc.light?.dim || 0, lightDoc.light?.bright || 0);
 
-        // Skip natural lights if the target is beyond their maximum reach
-        // We let magical lights pass this check so getDegradedTier can calculate the "bleed" if enabled
         if (!isMagical && distance > maxRadius) continue;
 
         if (isDarknessSource) {
@@ -87,13 +104,12 @@ function getBestIlluminationTier(targetPoint) {
             continue;
         }
 
-        // Pass the maxRadius down into the calculator
         const calculatedTier = getDegradedTier(distance, baseIllumination, isMagical, maxRadius);
         if (calculatedTier < bestTier) bestTier = calculatedTier;
     }
 
     if (inMagicalDarkness) {
-        bestTier = Math.max(bestTier, RMU_LIGHT_LEVELS.EXTREMELY_DARK);
+        bestTier = Math.max(bestTier, 5); // RMU Extremely Dark
     }
 
     return bestTier;
@@ -145,38 +161,52 @@ export function determineLightingState(sourceDoc, target) {
     const sourceCenter = sourceDoc.object ? sourceDoc.object.center : { x: sourceDoc.x, y: sourceDoc.y };
     const targetPoint = target.object ? target.object.center : target.x !== undefined ? target : { x: target.x, y: target.y };
 
-    // 2. SIGHT COLLISION: Does a wall block the observer from seeing the target point?
     const blocksSight = CONFIG.Canvas.polygonBackends.sight.testCollision(sourceCenter, targetPoint, { type: "sight", mode: "any" });
-
     const path = canvas.grid.measurePath([sourceCenter, targetPoint]);
     const distanceToTarget = path.distance;
 
-    // If a wall is in the way, immediately abort calculation and return the failure state
     if (blocksSight) {
-        return {
-            hasLineOfSight: false,
-            distance: distanceToTarget,
-        };
+        return { hasLineOfSight: false, distance: distanceToTarget };
     }
 
     const visionMode = sourceDoc.sight?.visionMode;
     const visionRange = sourceDoc.sight?.range || 0;
     const nativeVision = getActorVisionCapabilities(sourceDoc.actor);
 
-    let hasNightvision = visionMode === "nightvision" || nativeVision.hasNativeNightvision;
-    let hasDarkvision = visionMode === "darkvision" || nativeVision.hasNativeDarkvision;
+    // Extract all potential vision states
+    const hasNightvision = visionMode === "nightvision" || nativeVision.hasNativeNightvision;
+    const hasDarkvision = visionMode === "darkvision" || nativeVision.hasNativeDarkvision;
+    const hasThermal = visionMode === "rmuThermal" || nativeVision.hasThermalVision;
+    const hasDemonSight = visionMode === "rmuDemonSight" || nativeVision.hasDemonSight;
 
-    if (hasDarkvision && distanceToTarget > visionRange) {
-        hasDarkvision = false;
+    // Resolve what the effective math should be based on distance and hierarchy
+    let effectiveDarkvision = false;
+    let effectiveNightvision = hasNightvision;
+    let activeSpecialVision = false; // Flag to tell the chat card if Thermal/Demon is actively helping
+
+    if (hasDemonSight) {
+        if (distanceToTarget <= (nativeVision.demonSightRange || 100)) {
+            effectiveDarkvision = true;
+            activeSpecialVision = "demonSight";
+        } else {
+            effectiveNightvision = true; // Demon sight acts as nightvision beyond 100'
+            activeSpecialVision = "demonSight";
+        }
+    } else if (hasThermal && distanceToTarget <= (nativeVision.thermalRange || 50)) {
+        effectiveDarkvision = true;
+        activeSpecialVision = "thermal";
+    } else if (hasDarkvision && distanceToTarget <= visionRange) {
+        effectiveDarkvision = true;
     }
 
     const tier = getBestIlluminationTier(targetPoint);
-    const { penaltyFull, penaltyHalf } = calculatePenalties(tier, hasNightvision, hasDarkvision);
+    const { penaltyFull, penaltyHalf } = calculatePenalties(tier, effectiveNightvision, effectiveDarkvision);
 
     return {
         tier,
-        hasNightvision,
-        hasDarkvision,
+        hasNightvision: effectiveNightvision,
+        hasDarkvision: effectiveDarkvision,
+        activeSpecialVision, // Passes the specific mode to the chat parser
         penaltyFull,
         penaltyHalf,
         distance: distanceToTarget,

@@ -1,4 +1,4 @@
-import { registerVisionModes } from "./src/config.js";
+import { registerVisionModes, registerDetectionModes } from "./src/config.js";
 import { registerSettings } from "./src/settings.js";
 import { determineLightingState } from "./src/calculator.js";
 import { outputLightingToChat } from "./src/chat.js";
@@ -19,8 +19,11 @@ Hooks.once("init", async () => {
     // Register module-specific settings (e.g., magical light degradation toggle)
     registerSettings();
 
-    // Register native Canvas vision modes (Nightvision, Darkvision)
+    // Register Canvas vision modes
     registerVisionModes();
+
+    // Register Canvas detection modes
+    registerDetectionModes();
 
     // Expose the public API for the RMU system developer to ingest
     const module = game.modules.get("rmu-lighting-vision");

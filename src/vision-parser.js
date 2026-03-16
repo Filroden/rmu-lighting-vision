@@ -1,23 +1,24 @@
 /**
- * Parses an RMU actor's talents, spells, and active effects
- * to determine their innate vision capabilities.
+ * Parses an RMU actor's talents to determine their innate vision capabilities.
  * @param {Actor} actor - The Foundry Actor document.
- * @returns {Object} An object detailing vision flags and calculated ranges.
+ * @returns {Object} An object detailing vision flags, ranges, and detection modes.
  */
 export function getActorVisionCapabilities(actor) {
     const capabilities = {
         hasNativeNightvision: false,
         hasNativeDarkvision: false,
         darkvisionRange: 0,
-        hasInvisibilitySense: false,
-        invisibilitySenseRange: 0,
+        hasThermalVision: false,
+        thermalRange: 0,
+        hasDemonSight: false,
+        demonSightRange: 0,
+        detectionModes: [], // Holds Foundry-native detection objects
     };
 
     if (!actor) return capabilities;
 
-    // --- 1. PARSE TALENTS ---
-    // RMU stores talents in system._talents. Fallback to actor.items for safety.
     const talents = actor.system?._talents || actor.items?.filter((i) => i.type === "talent") || [];
+    const level = actor.system?.experience?.level || 1; // Extract the actor's level
 
     for (const talent of talents) {
         const talentName = talent.system?.talentName || talent.name || "";
@@ -30,20 +31,58 @@ export function getActorVisionCapabilities(actor) {
 
             case "Darkvision":
                 capabilities.hasNativeDarkvision = true;
-                // RMU Core Law: Darkvision grants 10' per tier
                 capabilities.darkvisionRange = tier * 10;
                 break;
 
+            case "Thermal Vision":
+                capabilities.hasThermalVision = true;
+                capabilities.thermalRange = 50;
+                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: 50 });
+                break;
+
+            case "Sight, Demon":
+                capabilities.hasDemonSight = true;
+                capabilities.demonSightRange = 100;
+                capabilities.hasThermalVision = true;
+                capabilities.thermalRange = 50;
+                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: level * 5 });
+                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: 50 });
+                break;
+
             case "Invisibility Sense":
-                capabilities.hasInvisibilitySense = true;
-                // RMU Creature Law: Invisibility sense grants 5' per tier
-                capabilities.invisibilitySenseRange = tier * 5;
+                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: level * 5 });
+                break;
+
+            case "Tremorsense":
+                capabilities.detectionModes.push({ id: "feelTremor", enabled: true, range: 50 });
+                break;
+
+            case "Life Sense":
+                capabilities.detectionModes.push({ id: "rmuLifeSense", enabled: true, range: tier * 5 });
+                break;
+
+            case "Presence Sense":
+                capabilities.detectionModes.push({ id: "rmuPresenceSense", enabled: true, range: level * 5 });
+                break;
+
+            case "Air Movement Detection":
+                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: tier });
+                break;
+
+            case "Electrolocation, Passive":
+                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: level });
                 break;
         }
     }
 
-    // --- 2. PARSE ACTIVE EFFECTS & SPELLS ---
-    // (Future expansion: Check actor.effects for temporary vision buffs here)
+    // Helper to collapse duplicate detection modes (e.g., if they have two sources of seeInvisibility, keep the largest range)
+    const mergedModes = {};
+    for (const mode of capabilities.detectionModes) {
+        if (!mergedModes[mode.id] || mode.range > mergedModes[mode.id].range) {
+            mergedModes[mode.id] = mode;
+        }
+    }
+    capabilities.detectionModes = Object.values(mergedModes);
 
     return capabilities;
 }

@@ -1,13 +1,4 @@
-export const RADIUS_MAPPING = {
-    "-1": { bright: 0, dim: 0 },
-    0: { bright: 30, dim: 100 },
-    1: { bright: 10, dim: 30 },
-    2: { bright: 0, dim: 10 },
-    3: { bright: 0, dim: 0 },
-    4: { bright: 0, dim: 0 },
-    5: { bright: 0, dim: 0 },
-    6: { bright: 0, dim: 0 },
-};
+import { getRadiiForTier } from "./visual-mapping.js";
 
 /**
  * Intercepts document updates to auto-populate native light radii based on RMU tiers.
@@ -19,11 +10,12 @@ function syncLightRadii(document, updateData) {
     const rmuFlags = updateData.flags?.["rmu-lighting-vision"] || {};
     const currentFlags = document.flags?.["rmu-lighting-vision"] || {};
 
-    // Check if this document has RMU lighting active, either in this update or already saved
-    const tierValue = rmuFlags.baseIllumination ?? currentFlags.baseIllumination;
-    if (tierValue === undefined || tierValue === -1) return;
+    const rawTier = rmuFlags.baseIllumination ?? currentFlags.baseIllumination;
+    if (rawTier === undefined || rawTier === null) return;
 
-    const tier = parseInt(tierValue, 10);
+    const tier = parseInt(rawTier, 10);
+    if (isNaN(tier) || tier === -1) return; // Safely abort if it is "None"
+
     const isMagical = rmuFlags.isMagical ?? currentFlags.isMagical ?? false;
 
     const isToken = document.documentName === "Token";
@@ -45,31 +37,32 @@ function syncLightRadii(document, updateData) {
     let targetDim = 0;
 
     if (!isMagical) {
-        // NATURAL LIGHT: Strictly enforce the RMU visual mapping
-        if (RADIUS_MAPPING[tier]) {
-            targetBright = RADIUS_MAPPING[tier].bright;
-            targetDim = RADIUS_MAPPING[tier].dim;
-        }
+        // NATURAL LIGHT: Dynamically generate radii based on the consensus matrix
+        const generatedRadii = getRadiiForTier(tier);
+        targetBright = generatedRadii.bright;
+        targetDim = generatedRadii.dim;
     } else {
-        // MAGICAL LIGHT: Respect the GM's entered Bright Radius as the Spell's Area of Effect
+        // MAGICAL LIGHT
         const updatedLight = isToken ? updateData.light : updateData.config;
         const coreRadius = updatedLight?.bright ?? currentLight?.bright ?? 0;
+
+        // Preserve the custom spell radius in our flags so it survives the engine being toggled off
+        updateData.flags = updateData.flags || {};
+        updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
+        updateData.flags["rmu-lighting-vision"].magicalRadius = coreRadius;
 
         targetBright = coreRadius;
 
         if (!game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
-            // Strict Mode: Hard visual edge. Bright and Dim radii are identical.
             targetDim = coreRadius;
         } else {
-            // Designer Mode: Light drops 2 tiers immediately outside the spell boundary
             const boundaryTier = Math.min(tier + 2, 6);
-            const dimExtension = RADIUS_MAPPING[boundaryTier]?.dim || 0;
+            const dimExtension = getRadiiForTier(boundaryTier).dim;
             targetDim = coreRadius + dimExtension;
         }
     }
 
     // INJECT RADII INTO THE DATABASE UPDATE
-    // We use Math.max to ensure Foundry's engine doesn't crash from Dim being smaller than Bright
     if (isToken) {
         updateData.light = updateData.light || {};
         updateData.light.bright = targetBright;

@@ -1,12 +1,17 @@
 {
     "rmu.settings.magicalLightDegrades.name": "Magical Light Degrades",
-    "rmu.settings.magicalLightDegrades.hint": "If enabled, magical light sources suffer the standard RMU distance degradation penalties. If disabled, they illuminate their full radius at their base tier.",
+    "rmu.settings.magicalLightDegrades.hint": "If disabled, magical light creates a sharp edge, providing its base illumination up to its radius and dropping instantly to pitch black beyond. If enabled, the light drops two tiers at the radius boundary and degrades normally thereafter, creating a softer fade.",
     "rmu.settings.enableEngine.name": "Enable Automated Lighting Engine",
+    "rmu.settings.enableEngine.hint": "Toggles the automated RMU lighting and vision engine. When enabled, the module automatically manages token vision and light radii based on RMU rules. Disabling this safely restores all tokens and lights in the world to their original, pre-automated native settings.",
 
     "rmu.vision.nightvision": "Nightvision",
     "rmu.vision.darkvision": "Darkvision",
-    "rmu.vision.nightvisionActive": "Observer is utilizing Nightvision.",
-    "rmu.vision.darkvisionActive": "Observer is utilizing Darkvision.",
+    "rmu.vision.thermal": "Thermal Vision",
+    "rmu.vision.demonSight": "Demon Sight",
+    "rmu.vision.nightvisionActive": "Observer is using Nightvision.",
+    "rmu.vision.darkvisionActive": "Observer is using Darkvision.",
+    "rmu.vision.thermalActive": "Observer is utilizing Thermal Vision.",
+    "rmu.vision.demonSightActive": "Observer is utilizing Demon Sight.",
 
     "rmu.keybinds.checkLighting.name": "Check Target Lighting",
     "rmu.keybinds.checkLighting.hint": "Outputs the exact RMU lighting degradation penalty between the selected token and their target.",
@@ -34,5 +39,8 @@
     "rmu.light.tiers.shadowy": "Shadowy / Heavy Shadows",
     "rmu.light.tiers.dark": "Dark",
     "rmu.light.tiers.extremelyDark": "Extremely Dark",
-    "rmu.light.tiers.pitchBlack": "Pitch Black / Utterdark"
+    "rmu.light.tiers.pitchBlack": "Pitch Black / Utterdark",
+
+    "rmu.detection.lifeSense": "Life Sense",
+    "rmu.detection.presenceSense": "Presence Sense"
 }

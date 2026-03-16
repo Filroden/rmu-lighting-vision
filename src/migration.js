@@ -1,4 +1,4 @@
-import { RADIUS_MAPPING } from "./light-sync.js";
+import { getRadiiForTier } from "./visual-mapping.js";
 import { getActorVisionCapabilities } from "./vision-parser.js";
 
 /**
@@ -22,11 +22,33 @@ export async function toggleLightingEngine(isEnabled) {
                     _id: light.id,
                     config: { bright: rmuFlags.originalRadii.bright, dim: rmuFlags.originalRadii.dim },
                 });
-            } else if (isEnabled && rmuFlags.baseIllumination !== undefined && RADIUS_MAPPING[rmuFlags.baseIllumination]) {
-                const targetRadii = RADIUS_MAPPING[rmuFlags.baseIllumination];
+            } else if (isEnabled && rmuFlags.baseIllumination !== undefined && rmuFlags.baseIllumination !== -1) {
+                const tier = parseInt(rmuFlags.baseIllumination, 10);
+                const isMagical = rmuFlags.isMagical ?? false;
+                let targetBright = 0;
+                let targetDim = 0;
+
+                if (!isMagical) {
+                    const generatedRadii = getRadiiForTier(tier);
+                    targetBright = generatedRadii.bright;
+                    targetDim = generatedRadii.dim;
+                } else {
+                    // Retrieve the saved magical radius, falling back to current if it's the first time
+                    const currentRadius = light.config?.bright ?? 0; // Use token.light?.bright in the Token loop!
+                    const coreRadius = rmuFlags.magicalRadius ?? currentRadius;
+
+                    targetBright = coreRadius;
+                    if (!game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
+                        targetDim = coreRadius;
+                    } else {
+                        const boundaryTier = Math.min(tier + 2, 6);
+                        targetDim = coreRadius + getRadiiForTier(boundaryTier).dim;
+                    }
+                }
+
                 ambientUpdates.push({
                     _id: light.id,
-                    config: { bright: targetRadii.bright, dim: targetRadii.dim },
+                    config: { bright: targetBright, dim: Math.max(targetBright, targetDim) },
                 });
             }
         }
@@ -43,31 +65,77 @@ export async function toggleLightingEngine(isEnabled) {
                 if (!isEnabled && rmuFlags.originalRadii) {
                     tokenPatch.light = { bright: rmuFlags.originalRadii.bright, dim: rmuFlags.originalRadii.dim };
                     requiresUpdate = true;
-                } else if (isEnabled && rmuFlags.baseIllumination !== undefined && RADIUS_MAPPING[rmuFlags.baseIllumination]) {
-                    const targetRadii = RADIUS_MAPPING[rmuFlags.baseIllumination];
-                    tokenPatch.light = { bright: targetRadii.bright, dim: targetRadii.dim };
+                } else if (isEnabled && rmuFlags.baseIllumination !== undefined && rmuFlags.baseIllumination !== -1) {
+                    const tier = parseInt(rmuFlags.baseIllumination, 10);
+                    const isMagical = rmuFlags.isMagical ?? false;
+                    let targetBright = 0;
+                    let targetDim = 0;
+
+                    if (!isMagical) {
+                        const generatedRadii = getRadiiForTier(tier);
+                        targetBright = generatedRadii.bright;
+                        targetDim = generatedRadii.dim;
+                    } else {
+                        // Retrieve the saved magical radius, falling back to current if it's the first time
+                        const currentRadius = light.config?.bright ?? 0; // Use token.light?.bright in the Token loop!
+                        const coreRadius = rmuFlags.magicalRadius ?? currentRadius;
+
+                        targetBright = coreRadius;
+                        if (!game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
+                            targetDim = coreRadius;
+                        } else {
+                            const boundaryTier = Math.min(tier + 2, 6);
+                            targetDim = coreRadius + getRadiiForTier(boundaryTier).dim;
+                        }
+                    }
+
+                    tokenPatch.light = { bright: targetBright, dim: Math.max(targetBright, targetDim) };
                     requiresUpdate = true;
                 }
             }
 
-            // --- Handle Token Perception (Sight) ---
-            if (!isEnabled && rmuFlags?.originalSight) {
-                tokenPatch.sight = rmuFlags.originalSight;
-                requiresUpdate = true;
+            // --- Handle Token Perception (Sight & Detection) ---
+            if (!isEnabled) {
+                // Restore Sight
+                if (rmuFlags?.originalSight) {
+                    tokenPatch.sight = rmuFlags.originalSight;
+                    requiresUpdate = true;
+                }
+                // Restore Detection Modes
+                if (rmuFlags?.originalDetectionModes !== undefined) {
+                    tokenPatch.detectionModes = rmuFlags.originalDetectionModes;
+                    requiresUpdate = true;
+                }
             } else if (isEnabled && actor) {
                 // Recalculate and enforce vision modes based on current talents
                 const nativeVision = getActorVisionCapabilities(actor);
                 let optimalMode = "basic";
                 let optimalRange = 0;
 
-                if (nativeVision.hasNativeDarkvision) {
+                // HIERARCHY: Checks the most powerful vision modes first
+                if (nativeVision.hasDemonSight) {
+                    optimalMode = "rmuDemonSight";
+                    optimalRange = nativeVision.demonSightRange;
+                } else if (nativeVision.hasThermalVision) {
+                    optimalMode = "rmuThermal";
+                    optimalRange = nativeVision.thermalRange;
+                } else if (nativeVision.hasNativeDarkvision) {
                     optimalMode = "darkvision";
                     optimalRange = nativeVision.darkvisionRange;
                 } else if (nativeVision.hasNativeNightvision) {
                     optimalMode = "nightvision";
                 }
 
-                tokenPatch.sight = { enabled: true, visionMode: optimalMode, range: optimalRange };
+                // Grab and spread the shader defaults
+                const modeDefaults = CONFIG.Canvas.visionModes[optimalMode]?.vision?.defaults || {};
+
+                tokenPatch.sight = {
+                    enabled: true,
+                    visionMode: optimalMode,
+                    range: optimalRange,
+                    ...modeDefaults,
+                };
+                tokenPatch.detectionModes = nativeVision.detectionModes;
                 requiresUpdate = true;
             }
 
@@ -76,7 +144,6 @@ export async function toggleLightingEngine(isEnabled) {
             }
         }
 
-        // Dispatch bulk updates per scene
         if (ambientUpdates.length > 0) {
             await scene.updateEmbeddedDocuments("AmbientLight", ambientUpdates);
             updatedCount += ambientUpdates.length;

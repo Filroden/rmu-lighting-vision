@@ -9,9 +9,13 @@ async function injectRMULightSettings(app, html, data) {
     // Prevent duplicate injections if the hook fires twice
     if (root.querySelector(".rmu-light-settings")) return;
 
+    // Dynamically determine the default fallback based on document type
+    const isToken = app.document.documentName === "Token";
+    const defaultBase = isToken ? -1 : 0;
+
     // Construct the data payload for the Handlebars template
     const templateData = {
-        currentBase: app.document.getFlag("rmu-lighting-vision", "baseIllumination") ?? 0,
+        currentBase: app.document.getFlag("rmu-lighting-vision", "baseIllumination") ?? defaultBase,
         isMagical: app.document.getFlag("rmu-lighting-vision", "isMagical") ?? false,
         baseIlluminationOptions: {
             "-1": game.i18n.localize("rmu.light.tiers.none"),

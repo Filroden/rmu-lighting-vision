@@ -33,15 +33,18 @@
 }
 
 .rmu-lighting-chat .rmu-chat-body p {
-    margin: 0 0 var(--filroden-space-xs) 0;
+    margin: 0 0 var(--filroden-space-s) 0;
     color: var(--filroden-color-text-main);
+    line-height: 1.3;
 }
 
 .rmu-lighting-chat .rmu-vision-note {
     color: var(--filroden-color-text-muted);
     font-size: var(--filroden-font-size-s);
-    margin-top: var(--filroden-space-s);
+    margin-top: var(--filroden-space-m) !important;
     text-align: center;
+    border: 2px solid var(--filroden-color-border);
+    padding: 10px;
 }
 
 .rmu-lighting-chat hr {

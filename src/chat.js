@@ -18,7 +18,11 @@ export async function outputLightingToChat(sourceDoc, targetName, state) {
 
     // Determine which vision string to display, if any
     let activeVision = "";
-    if (state.hasDarkvision) {
+    if (state.activeSpecialVision === "demonSight") {
+        activeVision = game.i18n.localize("rmu.vision.demonSightActive");
+    } else if (state.activeSpecialVision === "thermal") {
+        activeVision = game.i18n.localize("rmu.vision.thermalActive");
+    } else if (state.hasDarkvision) {
         activeVision = game.i18n.localize("rmu.vision.darkvisionActive");
     } else if (state.hasNightvision) {
         activeVision = game.i18n.localize("rmu.vision.nightvisionActive");
