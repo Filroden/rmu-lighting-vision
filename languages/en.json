@@ -1,0 +1,46 @@
+{
+    "rmu.settings.magicalLightDegrades.name": "Magical Light Degrades",
+    "rmu.settings.magicalLightDegrades.hint": "If disabled, magical light creates a sharp edge, providing its base illumination up to its radius and dropping instantly to pitch black beyond. If enabled, the light drops two tiers at the radius boundary and degrades normally thereafter, creating a softer fade.",
+    "rmu.settings.enableEngine.name": "Enable Automated Lighting Engine",
+    "rmu.settings.enableEngine.hint": "Toggles the automated RMU lighting and vision engine. When enabled, the module automatically manages token vision and light radii based on RMU rules. Disabling this safely restores all tokens and lights in the world to their original, pre-automated native settings.",
+
+    "rmu.vision.nightvision": "Nightvision",
+    "rmu.vision.darkvision": "Darkvision",
+    "rmu.vision.thermal": "Thermal Vision",
+    "rmu.vision.demonSight": "Demon Sight",
+    "rmu.vision.nightvisionActive": "Observer is using Nightvision.",
+    "rmu.vision.darkvisionActive": "Observer is using Darkvision.",
+    "rmu.vision.thermalActive": "Observer is utilizing Thermal Vision.",
+    "rmu.vision.demonSightActive": "Observer is utilizing Demon Sight.",
+
+    "rmu.keybinds.checkLighting.name": "Check Target Lighting",
+    "rmu.keybinds.checkLighting.hint": "Outputs the exact RMU lighting degradation penalty between the selected token and their target.",
+
+    "rmu.warnings.selectOneTarget": "You must control exactly one token and target exactly one token to calculate lighting penalties.",
+
+    "rmu.chat.lightingReport": "RMU Lighting & Vision Report",
+    "rmu.chat.observer": "Observer",
+    "rmu.chat.target": "Target",
+    "rmu.chat.condition": "Lighting Condition",
+    "rmu.chat.sightRequired": "Sight Required",
+    "rmu.chat.sightHelpful": "Sight Helpful",
+    "rmu.chat.noLineOfSight": "No Line of Sight to Target",
+
+    "rmu.light.settingsHeader": "RMU Lighting Settings",
+    "rmu.light.baseIllumination": "Base Illumination",
+    "rmu.light.baseIlluminationHint": "The starting light tier within the first 10 feet. The module will automatically degrade the light at 30, 100, and 300 feet.",
+    "rmu.light.isMagical": "Magical Source",
+    "rmu.light.isMagicalHint": "Flags this light as magical, allowing it to overcome standard magical darkness.",
+
+    "rmu.light.tiers.none": "None (Not a Light Source)",
+    "rmu.light.tiers.bright": "Bright Light / No Shadows",
+    "rmu.light.tiers.uneven": "Uneven Light / Light Shadows",
+    "rmu.light.tiers.dim": "Dim Light / Medium Shadows",
+    "rmu.light.tiers.shadowy": "Shadowy / Heavy Shadows",
+    "rmu.light.tiers.dark": "Dark",
+    "rmu.light.tiers.extremelyDark": "Extremely Dark",
+    "rmu.light.tiers.pitchBlack": "Pitch Black / Utterdark",
+
+    "rmu.detection.lifeSense": "Life Sense",
+    "rmu.detection.presenceSense": "Presence Sense"
+}

@@ -1,0 +1,32 @@
+<div class="rmu-lighting-chat">
+    <header class="rmu-chat-header">
+        <h3>{{localize "rmu.chat.lightingReport"}}</h3>
+    </header>
+    <div class="rmu-chat-body">
+        <p><strong>{{localize "rmu.chat.observer"}}:</strong> {{observerName}}</p>
+        <p><strong>{{localize "rmu.chat.target"}}:</strong> {{targetName}}</p>
+
+        {{#if hasLineOfSight}}
+            <p><strong>{{localize "rmu.chat.condition"}}:</strong> {{localize conditionLabel}}</p>
+
+            {{#if activeVision}}
+                <p class="rmu-vision-note"><em>{{activeVision}}</em></p>
+            {{/if}}
+
+            <div class="rmu-penalty-grid">
+                <div class="penalty-box">
+                    <span class="penalty-label">{{localize "rmu.chat.sightRequired"}}</span>
+                    <strong class="penalty-value">{{penaltyFull}}</strong>
+                </div>
+                <div class="penalty-box">
+                    <span class="penalty-label">{{localize "rmu.chat.sightHelpful"}}</span>
+                    <strong class="penalty-value">{{penaltyHalf}}</strong>
+                </div>
+            </div>
+        {{else}}
+            <p class="rmu-vision-note" style="color: var(--filroden-color-text-accent); font-weight: bold; font-size: var(--filroden-font-size-m);">
+                {{localize "rmu.chat.noLineOfSight"}}
+            </p>
+        {{/if}}
+    </div>
+</div>

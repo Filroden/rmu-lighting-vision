@@ -1,0 +1,5 @@
+# Version History
+
+| Version | Changes |
+| :--- | :--- |
+| **Version 1.0.0-beta1** | **CORE LIGHTING ENGINE**<br>- Implemented 7-tier RMU light degradation engine calculating distance thresholds (10', 30', 100', 300', 1000' and 3000').<br>- Added UI injection for Ambient Light and Token sheets to set Base Illumination and Magical Source properties.<br>- Handled Magical Darkness via negative luminosity overrides.<br>- Added `Shift + L` keybinding to generate comprehensive RMU penalty chat cards.<br>- Added global GM setting to toggle magical light degradation rules.<br><br>**VISION & DETECTION AUTOMATION**<br>- Automated parsing of RMU Actor items upon token creation to set vision ranges.<br>- Added custom WebGL Canvas Shaders for **Thermal Vision** (Orange) and **Demon Sight** (Crimson).<br>- Added custom wall-piercing Detection Modes for **Life Sense** (Cyan) and **Presence Sense** (Red).<br>- Implemented real-time Talent Exclusions: Life Sense ignores "Lifeless", Presence Sense ignores "Mindless" and "Animalistic".<br>- Mapped *Tremorsense*, *Invisibility Sense*, *Air Movement*, and *Electrolocation* to native Foundry detection modes.|
