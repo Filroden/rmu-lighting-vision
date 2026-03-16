@@ -49,8 +49,8 @@ These talents do not colour the canvas, but act as a radar. They pierce physical
 
 ## How to Use
 
-1. **Configure Light Sources:** Open the configuration sheet for any Ambient Light or Token emitting light. Navigate to the native tabs to find the new **RMU Lighting Settings** section.
-2. **Set Base Illumination:** Select the light level present within the first 10 feet of the source (e.g., a Torch is *Dim Light*). The module will automatically degrade the light mathematically.
+1. **Configure Light Sources:** Open the configuration sheet for any Ambient Light or Token emitting light. Find the new **RMU Lighting Settings** section.
+2. **Set Base Illumination:** Select the light level present within the first 10 feet of the source (e.g., a Torch is *Dim Light*). The module will automatically degrade the light mathematically. Set the option if the source is magical. Depending on your game setting this will make the magic light either like a spotlight with no light spilling beyond the radius or it will act like other light sources but fall off 2 steps of light degradation at the first boundary, then degrade normally after that.
 3. **Automated Tokens:** Simply drag an Actor with recognised vision talents onto the canvas. The module will automatically configure their Vision Modes and Detection Ranges.
 4. **Calculate Penalties:** Select your token, target an enemy token, and press `Shift + L` to output the exact environmental modifiers to the chat.
 
