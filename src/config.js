@@ -55,57 +55,67 @@ export function registerVisionModes() {
         vision: { darkness: { adaptive: true }, defaults: { attenuation: 0, contrast: 0, saturation: 0, brightness: 0 } },
     });
 
-    // 4. Darkvision Modes (Basic Fallback & Nightvision Fallback)
+    // 4. Darkvision Modes
     const darkvisionConfig = {
-        canvas: { shader: ColorAdjustmentsSamplerShader, uniforms: { contrast: 0.25, saturation: -0.4, brightness: 0.2 } },
-        vision: { darkness: { adaptive: true }, defaults: { attenuation: 0, contrast: 0.25, saturation: -0.4, brightness: 0.2 } },
+        canvas: { shader: ColorAdjustmentsSamplerShader, uniforms: { contrast: 0, saturation: 0, brightness: 0 } },
+        vision: {
+            darkness: { adaptive: false },
+            illuminates: true,
+            preferred: true,
+            defaults: { attenuation: 0, contrast: 0, saturation: 0, brightness: 0 },
+        },
     };
 
     CONFIG.Canvas.visionModes.darkvision = new VisionMode({
         id: "darkvision",
         label: "rmu.vision.darkvision",
-        canvas: darkvisionConfig.canvas,
-        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: basicLevels },
-        vision: darkvisionConfig.vision,
+        canvas: foundry.utils.deepClone(darkvisionConfig.canvas),
+        vision: foundry.utils.deepClone(darkvisionConfig.vision),
     });
 
     CONFIG.Canvas.visionModes.darkvisionNight = new VisionMode({
         id: "darkvisionNight",
         label: "rmu.vision.darkvisionNight",
-        canvas: darkvisionConfig.canvas,
-        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: nightvisionLevels },
-        vision: darkvisionConfig.vision,
+        canvas: foundry.utils.deepClone(darkvisionConfig.canvas),
+        vision: foundry.utils.deepClone(darkvisionConfig.vision),
     });
 
     // 5. Thermal Modes
     const thermalConfig = {
         canvas: { shader: ColorAdjustmentsSamplerShader, uniforms: { contrast: 0.4, saturation: 1.2, brightness: 0.1, tint: [1.0, 0.4, 0.0] } },
-        vision: { darkness: { adaptive: true }, defaults: { attenuation: 0, contrast: 0.4, saturation: 1.2, brightness: 0.1, tint: [1.0, 0.4, 0.0] } },
+        vision: {
+            darkness: { adaptive: false },
+            illuminates: true,
+            preferred: true,
+            defaults: { attenuation: 0, contrast: 0.4, saturation: 1.2, brightness: 0.1, tint: [1.0, 0.4, 0.0] },
+        },
     };
 
     CONFIG.Canvas.visionModes.rmuThermal = new VisionMode({
         id: "rmuThermal",
         label: "rmu.vision.thermal",
-        canvas: thermalConfig.canvas,
-        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: basicLevels },
-        vision: thermalConfig.vision,
+        canvas: foundry.utils.deepClone(thermalConfig.canvas),
+        vision: foundry.utils.deepClone(thermalConfig.vision),
     });
 
     CONFIG.Canvas.visionModes.rmuThermalNight = new VisionMode({
         id: "rmuThermalNight",
         label: "rmu.vision.thermalNight",
-        canvas: thermalConfig.canvas,
-        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: nightvisionLevels },
-        vision: thermalConfig.vision,
+        canvas: foundry.utils.deepClone(thermalConfig.canvas),
+        vision: foundry.utils.deepClone(thermalConfig.vision),
     });
 
-    // 6. Demon Sight (Always includes Nightvision fallback natively)
+    // 6. Demon Sight
     CONFIG.Canvas.visionModes.rmuDemonSight = new VisionMode({
         id: "rmuDemonSight",
         label: "rmu.vision.demonSight",
         canvas: { shader: ColorAdjustmentsSamplerShader, uniforms: { contrast: 0.5, saturation: 0.8, brightness: 0.1, tint: [0.7, 0.0, 0.1] } },
-        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: nightvisionLevels },
-        vision: { darkness: { adaptive: true }, defaults: { attenuation: 0, contrast: 0.5, saturation: 0.8, brightness: 0.1, tint: [0.7, 0.0, 0.1] } },
+        vision: {
+            darkness: { adaptive: false },
+            illuminates: true,
+            preferred: true,
+            defaults: { attenuation: 0, contrast: 0.5, saturation: 0.8, brightness: 0.1, tint: [0.7, 0.0, 0.1] },
+        },
     });
 }
 

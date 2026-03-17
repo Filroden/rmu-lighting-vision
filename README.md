@@ -1,6 +1,6 @@
 # RMU Lighting and Vision
 
-![Latest Version](https://img.shields.io/badge/Version-1.0.0-beta2-blue)
+![Latest Version](https://img.shields.io/badge/Version-1.0.0-beta3-blue)
 ![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v13-orange)
 ![System](https://img.shields.io/badge/System-RMU-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)

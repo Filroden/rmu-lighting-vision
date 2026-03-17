@@ -2,6 +2,7 @@ import { registerVisionModes, registerDetectionModes } from "./src/config.js";
 import { registerSettings } from "./src/settings.js";
 import { determineLightingState } from "./src/calculator.js";
 import { outputLightingToChat } from "./src/chat.js";
+import { registerVisionSourceOverride } from "./src/rmu-vision-source.js";
 import "./src/ui.js";
 import "./src/light-sync.js";
 import "./src/vision-sync.js";
@@ -24,6 +25,9 @@ Hooks.once("init", async () => {
 
     // Register Canvas detection modes
     registerDetectionModes();
+
+    // Inject the core overrides
+    registerVisionSourceOverride();
 
     // Expose the public API for the RMU system developer to ingest
     const module = game.modules.get("rmu-lighting-vision");
