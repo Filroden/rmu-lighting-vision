@@ -50,16 +50,19 @@ function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
  * @returns {number} The lowest (brightest) light tier affecting the point.
  */
 function getBestIlluminationTier(targetPoint) {
-    // 1. Establish the baseline ambient light of the room/map based on the GM's darkness slider
     let bestTier = 6;
     if (canvas.scene) {
-        const darkness = canvas.scene.environment?.darknessLevel ?? canvas.scene.darkness;
+        // Verify Global Illumination is actually enabled before granting ambient light
+        const isGlobalLightEnabled = canvas.scene.environment?.globalLight?.enabled ?? canvas.scene.globalLight ?? false;
 
-        if (darkness === 0) bestTier = 0;
-        else if (darkness <= 0.25) bestTier = 1;
-        else if (darkness <= 0.5) bestTier = 2;
-        else if (darkness <= 0.75) bestTier = 4;
-        else bestTier = 6;
+        if (isGlobalLightEnabled) {
+            const darkness = canvas.scene.environment?.darknessLevel ?? canvas.scene.darkness;
+            if (darkness === 0) bestTier = 0;
+            else if (darkness <= 0.25) bestTier = 1;
+            else if (darkness <= 0.5) bestTier = 2;
+            else if (darkness <= 0.75) bestTier = 4;
+            else bestTier = 6;
+        }
     }
 
     let inMagicalDarkness = false;

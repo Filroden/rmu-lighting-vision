@@ -1,4 +1,4 @@
-import { getRadiiForTier } from "./visual-mapping.js";
+import { getRadiiForTier, getLightMapping } from "./visual-mapping.js";
 
 /**
  * Intercepts document updates to auto-populate native light radii based on RMU tiers.
@@ -32,7 +32,7 @@ function syncLightRadii(document, updateData) {
         };
     }
 
-    // CALCULATE RADII
+    // 1. CALCULATE RAW RADII
     let targetBright = 0;
     let targetDim = 0;
 
@@ -46,7 +46,6 @@ function syncLightRadii(document, updateData) {
         const updatedLight = isToken ? updateData.light : updateData.config;
         const coreRadius = updatedLight?.bright ?? currentLight?.bright ?? 0;
 
-        // Preserve the custom spell radius in our flags so it survives the engine being toggled off
         updateData.flags = updateData.flags || {};
         updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
         updateData.flags["rmu-lighting-vision"].magicalRadius = coreRadius;
@@ -62,7 +61,20 @@ function syncLightRadii(document, updateData) {
         }
     }
 
-    // INJECT RADII INTO THE DATABASE UPDATE
+    // 2. APPLY MAPPING STRICTNESS (The Final Say)
+    const mapping = getLightMapping();
+    const radiusCategory = mapping[tier];
+
+    if (radiusCategory === "dim") {
+        // Strict Mode: Squash the bright radius, force it all to be dim
+        targetDim = Math.max(targetBright, targetDim);
+        targetBright = 0;
+    } else if (radiusCategory === "off") {
+        targetBright = 0;
+        targetDim = 0;
+    }
+
+    // 3. INJECT RADII INTO THE DATABASE UPDATE
     if (isToken) {
         updateData.light = updateData.light || {};
         updateData.light.bright = targetBright;

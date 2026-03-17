@@ -16,15 +16,15 @@ function autoConfigureTokenVision(tokenDoc) {
     let optimalMode = "basic";
     let optimalRange = 0;
 
-    // HIERARCHY: Checks the most powerful vision modes first
+    // HIERARCHY: Checks the most powerful vision modes first and checks for combos
     if (nativeVision.hasDemonSight) {
         optimalMode = "rmuDemonSight";
         optimalRange = nativeVision.demonSightRange;
     } else if (nativeVision.hasThermalVision) {
-        optimalMode = "rmuThermal";
+        optimalMode = nativeVision.hasNativeNightvision ? "rmuThermalNight" : "rmuThermal";
         optimalRange = nativeVision.thermalRange;
     } else if (nativeVision.hasNativeDarkvision) {
-        optimalMode = "darkvision";
+        optimalMode = nativeVision.hasNativeNightvision ? "darkvisionNight" : "darkvision";
         optimalRange = nativeVision.darkvisionRange;
     } else if (nativeVision.hasNativeNightvision) {
         optimalMode = "nightvision";
