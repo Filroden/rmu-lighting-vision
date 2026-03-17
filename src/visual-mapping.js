@@ -39,3 +39,33 @@ export function getRadiiForTier(baseTier) {
 
     return { bright, dim };
 }
+
+/**
+ * Retrieves the active light mapping configuration object.
+ */
+export function getLightMapping() {
+    const mode = game.settings.get("rmu-lighting-vision", "lightMapping");
+
+    if (mode === "strict") {
+        return {
+            0: "bright",
+            1: "bright",
+            2: "dim",
+            3: "dim",
+            4: "dim",
+            5: "off",
+            6: "off",
+        };
+    }
+
+    // Default: Forgiving
+    return {
+        0: "bright",
+        1: "bright",
+        2: "bright",
+        3: "dim",
+        4: "dim",
+        5: "off",
+        6: "off",
+    };
+}
