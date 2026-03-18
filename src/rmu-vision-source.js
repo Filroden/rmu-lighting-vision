@@ -1,5 +1,3 @@
-// file: src/rmu-vision-source.js
-
 export function registerVisionSourceOverride() {
     // =========================================================================
     // 1. THE GEOMETRY OVERRIDE (Successfully pierces darkness polygons)

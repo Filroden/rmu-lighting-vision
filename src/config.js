@@ -25,26 +25,40 @@ export function registerVisionModes() {
     // 1. Define the Fallback Level Maps (How the world looks OUTSIDE the vision radius)
     const basicLevels = isGritty
         ? {
+              [LIGHTING_LEVELS.BRIGHT]: LIGHTING_LEVELS.BRIGHT,
               [LIGHTING_LEVELS.DIM]: LIGHTING_LEVELS.UNLIT,
               [LIGHTING_LEVELS.UNLIT]: LIGHTING_LEVELS.UNLIT,
           }
         : {
+              [LIGHTING_LEVELS.BRIGHT]: LIGHTING_LEVELS.BRIGHT,
               [LIGHTING_LEVELS.DIM]: LIGHTING_LEVELS.DIM,
               [LIGHTING_LEVELS.UNLIT]: LIGHTING_LEVELS.UNLIT,
           };
 
     const nightvisionLevels = isGritty
         ? {
+              [LIGHTING_LEVELS.BRIGHT]: LIGHTING_LEVELS.BRIGHT,
               [LIGHTING_LEVELS.DIM]: LIGHTING_LEVELS.DIM,
               [LIGHTING_LEVELS.UNLIT]: LIGHTING_LEVELS.DIM,
           }
         : {
+              [LIGHTING_LEVELS.BRIGHT]: LIGHTING_LEVELS.BRIGHT,
               [LIGHTING_LEVELS.DIM]: LIGHTING_LEVELS.BRIGHT,
               [LIGHTING_LEVELS.UNLIT]: LIGHTING_LEVELS.DIM,
           };
 
     // 2. Patch Foundry's Default Vision
-    CONFIG.Canvas.visionModes.basic.lighting.levels = basicLevels;
+    // Re-instantiate the vision mode completely so WebGL is forced to use our levels
+    CONFIG.Canvas.visionModes.basic = new VisionMode({
+        id: "basic",
+        label: "VISION.ModeBasicVision",
+        lighting: {
+            background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED },
+            illumination: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED },
+            levels: basicLevels,
+        },
+        vision: { defaults: { attenuation: 0, contrast: 0, saturation: 0, brightness: 0 } },
+    });
 
     // 3. Nightvision Mode
     CONFIG.Canvas.visionModes.nightvision = new VisionMode({
@@ -70,6 +84,7 @@ export function registerVisionModes() {
         id: "darkvision",
         label: "rmu.vision.darkvision",
         canvas: foundry.utils.deepClone(darkvisionConfig.canvas),
+        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: basicLevels },
         vision: foundry.utils.deepClone(darkvisionConfig.vision),
     });
 
@@ -77,6 +92,7 @@ export function registerVisionModes() {
         id: "darkvisionNight",
         label: "rmu.vision.darkvisionNight",
         canvas: foundry.utils.deepClone(darkvisionConfig.canvas),
+        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: nightvisionLevels },
         vision: foundry.utils.deepClone(darkvisionConfig.vision),
     });
 
@@ -95,6 +111,7 @@ export function registerVisionModes() {
         id: "rmuThermal",
         label: "rmu.vision.thermal",
         canvas: foundry.utils.deepClone(thermalConfig.canvas),
+        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: basicLevels },
         vision: foundry.utils.deepClone(thermalConfig.vision),
     });
 
@@ -102,6 +119,7 @@ export function registerVisionModes() {
         id: "rmuThermalNight",
         label: "rmu.vision.thermalNight",
         canvas: foundry.utils.deepClone(thermalConfig.canvas),
+        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: nightvisionLevels },
         vision: foundry.utils.deepClone(thermalConfig.vision),
     });
 
@@ -110,6 +128,7 @@ export function registerVisionModes() {
         id: "rmuDemonSight",
         label: "rmu.vision.demonSight",
         canvas: { shader: ColorAdjustmentsSamplerShader, uniforms: { contrast: 0.5, saturation: 0.8, brightness: 0.1, tint: [0.7, 0.0, 0.1] } },
+        lighting: { background: { visibility: VisionMode.LIGHTING_VISIBILITY.REQUIRED }, levels: nightvisionLevels },
         vision: {
             darkness: { adaptive: false },
             illuminates: true,
