@@ -69,3 +69,29 @@ export function getLightMapping() {
         6: "off",
     };
 }
+
+/**
+ * Calculates the dim radius extension for a magical light based on band widths.
+ * Simulating a diffused spotlight, the skipped tiers cause the threshold array to shift.
+ * @param {number} auraStartTier - The tier the light has degraded to just outside its core.
+ * @returns {number} The maximum distance the dim radius should extend.
+ */
+export function getMagicalExtension(auraStartTier) {
+    const DISTANCE_THRESHOLDS = [10, 30, 100, 300, 1000, 3000];
+    let maxExtension = 0;
+
+    // Because the light skipped a tier (Tier 0 -> Tier 2), the first aura band
+    // uses the 30' threshold (Index 1) instead of the 10' threshold.
+    let thresholdIndex = 1;
+
+    for (let tier = auraStartTier; tier <= 6; tier++) {
+        if (VISUAL_TIERS.unlitTiers.includes(tier)) break;
+
+        if (VISUAL_TIERS.dimTiers.includes(tier) || VISUAL_TIERS.brightTiers.includes(tier)) {
+            maxExtension = DISTANCE_THRESHOLDS[thresholdIndex];
+            thresholdIndex++;
+        }
+    }
+
+    return maxExtension;
+}

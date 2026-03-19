@@ -1,7 +1,7 @@
 {
     "id": "rmu-lighting-vision",
     "title": "RMU Lighting and Vision",
-    "description": "The RMU Lighting and Vision module automates the environmental penalties defined in Rolemaster Unified (RMU) Core Law Table 15-7.",
+    "description": "The **RMU Lighting and Vision** module implements the rules for visibility in Core Law and automates many vision talents.",
     "version": "1.0.0-beta3",
     "compatibility": { "minimum": "13", "verified": "13.351" },
     "authors": [{ "name": "Ken Dearman" }],
@@ -10,14 +10,7 @@
     },
     "esmodules": ["main.js"],
     "styles": ["styles/filroden-theme.css", "styles/rmu-lighting.css"],
-    "languages": [
-        { "lang": "en", "name": "English", "path": "languages/en.json" },
-        { "lang": "en-GB", "name": "English (UK)", "path": "languages/en-gb.json" },
-        { "lang": "es", "name": "Español (Spanish)", "path": "languages/es.json" },
-        { "lang": "es-419", "name": "Español (Spanish - Latin America)", "path": "languages/es-419.json" },
-        { "lang": "fr", "name": "Français (French)", "path": "languages/fr.json" },
-        { "lang": "sv", "name": "Svenska (Swedish)", "path": "languages/sv.json" }
-    ],
+    "languages": [{ "lang": "en", "name": "English", "path": "languages/en.json" }],
     "url": "https://github.com/Filroden/rmu-lighting-vision",
     "manifest": "https://github.com/Filroden/rmu-lighting-vision/releases/latest/download/module.json",
     "download": "https://github.com/Filroden/rmu-lighting-vision/releases/download/v1.0.0-beta3/rmu-lighting-vision.zip",

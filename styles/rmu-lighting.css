@@ -137,3 +137,10 @@
     margin: 0 !important;
     padding: 0 !important;
 }
+
+/* --- 4. Dialog Formatting --- */
+.rmu-welcome-dialog p {
+    margin: 0 0 var(--filroden-space-s) 0;
+    color: var(--filroden-color-text-main);
+    line-height: 1.3;
+}

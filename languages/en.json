@@ -3,8 +3,8 @@
     "rmu.settings.magicalLightDegrades.hint": "If disabled, magical light creates a sharp edge, providing its base illumination up to its radius and dropping instantly to pitch black beyond. If enabled, the light drops two tiers at the radius boundary and degrades normally thereafter, creating a softer fade.",
     "rmu.settings.lightMapping.name": "Light Mapping (Emitted Light)",
     "rmu.settings.lightMapping.hint": "Determines how RMU Light Tiers translate to the physical canvas radii.",
-    "rmu.settings.lightMapping.forgiving": "Forgiving (Tier 2/Dim Light renders as Bright)",
-    "rmu.settings.lightMapping.strict": "Strict (Tier 2/Dim Light renders as Dim)",
+    "rmu.settings.lightMapping.forgiving": "Forgiving (Dim Light renders as Bright)",
+    "rmu.settings.lightMapping.strict": "Strict (Dim Light renders as Dim)",
 
     "rmu.settings.visionStrictness.name": "Vision Strictness (Perceived Light)",
     "rmu.settings.visionStrictness.hint": "Determines how characters perceive dim environments (Shadowy/Dark tiers).",
@@ -19,6 +19,11 @@
     "rmu.migration.restoreFoundry": "Restore Foundry Defaults",
     "rmu.migration.appliedSuccess": "RMU Lighting Engine successfully applied to current scene.",
     "rmu.migration.restoredSuccess": "Foundry VTT defaults successfully restored to current scene.",
+    "rmu.migration.welcome.p1": "It looks like this is your first time using the RMU Lighting module in this world.",
+    "rmu.migration.welcome.p2": "To use the strict RMU lighting rules, we need to migrate your existing tokens and light sources. <i>(Don't worry, your original settings are safely backed up so you can revert at any time).</i>",
+    "rmu.migration.welcome.p3": "Would you like to apply the RMU mechanics to your world now?",
+    "rmu.migration.welcome.yes": "Apply RMU Rules Now",
+    "rmu.migration.welcome.no": "Not Right Now",
 
     "rmu.vision.nightvision": "Nightvision",
     "rmu.vision.darkvision": "Darkvision",
@@ -28,8 +33,8 @@
     "rmu.vision.thermalNight": "Thermal & Nightvision",
     "rmu.vision.nightvisionActive": "Observer is using Nightvision.",
     "rmu.vision.darkvisionActive": "Observer is using Darkvision.",
-    "rmu.vision.thermalActive": "Observer is utilizing Thermal Vision.",
-    "rmu.vision.demonSightActive": "Observer is utilizing Demon Sight.",
+    "rmu.vision.thermalActive": "Observer is using Thermal Vision.",
+    "rmu.vision.demonSightActive": "Observer is using Demon Sight.",
 
     "rmu.keybinds.checkLighting.name": "Check Target Lighting",
     "rmu.keybinds.checkLighting.hint": "Outputs the exact RMU lighting degradation penalty between the selected token and their target.",
@@ -50,7 +55,7 @@
     "rmu.light.isMagical": "Magical Source",
     "rmu.light.isMagicalHint": "Flags this light as magical, allowing it to overcome standard magical darkness.",
     "rmu.light.isUtter.name": "Is Utterlight/Utterdark?",
-    "rmu.light.isUtter.hint": "Check this box to elevate the source to Utterlight (if positive luminosity) or Utterdark (if negative luminosity), making it absolute.",
+    "rmu.light.isUtter.hint": "Check this box to elevate the source to Utterlight or Utterdark (if set as a source of darkness), making it absolute.",
 
     "rmu.light.tiers.none": "None (Not a Light Source)",
     "rmu.light.tiers.bright": "Bright Light / No Shadows",

@@ -1,28 +1,41 @@
-import { getRadiiForTier, getLightMapping } from "./visual-mapping.js";
+import { getRadiiForTier, getLightMapping, getMagicalExtension } from "./visual-mapping.js";
 
-/**
- * Intercepts document updates to auto-populate native light radii based on RMU tiers.
- */
 function syncLightRadii(document, updateData) {
-    // ESCAPE HATCH
     if (!game.settings.get("rmu-lighting-vision", "enableLightingEngine")) return;
 
     const rmuFlags = updateData.flags?.["rmu-lighting-vision"] || {};
     const currentFlags = document.flags?.["rmu-lighting-vision"] || {};
 
-    const rawTier = rmuFlags.baseIllumination ?? currentFlags.baseIllumination;
-    if (rawTier === undefined || rawTier === null) return;
+    const isSweep = rmuFlags.isSweep ?? false;
+    if (isSweep && updateData.flags?.["rmu-lighting-vision"]) {
+        delete updateData.flags["rmu-lighting-vision"].isSweep;
+    }
 
-    const tier = parseInt(rawTier, 10);
-    if (isNaN(tier) || tier === -1) return; // Safely abort if it is "None"
+    let rawTier = rmuFlags.baseIllumination ?? currentFlags.baseIllumination ?? -1;
+    let tier = parseInt(rawTier, 10);
 
-    const isMagical = rmuFlags.isMagical ?? currentFlags.isMagical ?? false;
+    let isMagical = rmuFlags.isMagical ?? currentFlags.isMagical ?? false;
+    const isUtter = rmuFlags.isUtter ?? currentFlags.isUtter ?? false;
 
     const isToken = document.documentName === "Token";
     const currentLight = isToken ? document.light : document.config;
+    const updatedLight = isToken ? updateData.light : updateData.config;
 
-    // NON-DESTRUCTIVE BACKUP
+    // --- UX AUTO-SYNC: Utter implies Magical ---
+    if (isUtter && !isMagical) {
+        isMagical = true;
+        updateData.flags = updateData.flags || {};
+        updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
+        updateData.flags["rmu-lighting-vision"].isMagical = true;
+    }
+
+    if (isNaN(tier) || (tier === -1 && !isMagical && !isUtter)) return;
+
+    // Read-only check: Identify if this is a darkness source without forcing the database
+    const isDarknessSource = tier >= 6 || (updatedLight?.isDarkness ?? currentLight?.isDarkness ?? false) === true || (updatedLight?.luminosity ?? currentLight?.luminosity ?? 0) < 0;
+
     const existingBackup = currentFlags.originalRadii;
+
     if (!existingBackup) {
         updateData.flags = updateData.flags || {};
         updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
@@ -32,57 +45,78 @@ function syncLightRadii(document, updateData) {
         };
     }
 
-    // 1. CALCULATE RAW RADII
     let targetBright = 0;
     let targetDim = 0;
+    let targetPriority = 0;
 
-    if (!isMagical) {
-        // NATURAL LIGHT: Dynamically generate radii based on the consensus matrix
+    if (isMagical) {
+        if (isDarknessSource) targetPriority = isUtter ? 15 : 5;
+        else targetPriority = isUtter ? 20 : 10;
+    }
+
+    if (!isMagical && tier !== -1) {
         const generatedRadii = getRadiiForTier(tier);
         targetBright = generatedRadii.bright;
         targetDim = generatedRadii.dim;
-    } else {
-        // MAGICAL LIGHT
-        const updatedLight = isToken ? updateData.light : updateData.config;
-        const coreRadius = updatedLight?.bright ?? currentLight?.bright ?? 0;
+    } else if (isMagical) {
+        // --- IMMUTABLE MAGICAL RADIUS LOGIC ---
+        // Detect if the user manually typed a new radius by ensuring the incoming data actually differs from the canvas
+        const dimChanged = updatedLight?.dim !== undefined && updatedLight.dim !== currentLight?.dim;
+        const brightChanged = updatedLight?.bright !== undefined && updatedLight.bright !== currentLight?.bright;
+        const userChangedRadius = !isSweep && (dimChanged || brightChanged);
 
-        updateData.flags = updateData.flags || {};
-        updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
-        updateData.flags["rmu-lighting-vision"].magicalRadius = coreRadius;
+        let coreRadius;
+        if (userChangedRadius) {
+            // Only update the immutable core if the user actively changed the numbers
+            coreRadius = Math.max(updatedLight?.dim ?? currentLight?.dim ?? 0, updatedLight?.bright ?? currentLight?.bright ?? 0);
+            updateData.flags = updateData.flags || {};
+            updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
+            updateData.flags["rmu-lighting-vision"].magicalRadius = coreRadius;
+        } else {
+            coreRadius = currentFlags.magicalRadius ?? Math.max(currentLight?.dim ?? 0, currentLight?.bright ?? 0);
+
+            if (currentFlags.magicalRadius === undefined) {
+                updateData.flags = updateData.flags || {};
+                updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
+                updateData.flags["rmu-lighting-vision"].magicalRadius = coreRadius;
+            }
+        }
 
         targetBright = coreRadius;
 
-        if (!game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
+        if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
             targetDim = coreRadius;
         } else {
-            const boundaryTier = Math.min(tier + 2, 6);
-            const dimExtension = getRadiiForTier(boundaryTier).dim;
+            const safeTier = tier === -1 ? 0 : tier;
+            const boundaryTier = Math.min(safeTier + 2, 6);
+            const dimExtension = getMagicalExtension(boundaryTier);
             targetDim = coreRadius + dimExtension;
         }
     }
 
-    // 2. APPLY MAPPING STRICTNESS (The Final Say)
-    const mapping = getLightMapping();
-    const radiusCategory = mapping[tier];
+    if (!isDarknessSource && tier !== -1) {
+        const mapping = getLightMapping();
+        const radiusCategory = mapping[tier];
 
-    if (radiusCategory === "dim") {
-        // Strict Mode: Squash the bright radius, force it all to be dim
-        targetDim = Math.max(targetBright, targetDim);
-        targetBright = 0;
-    } else if (radiusCategory === "off") {
-        targetBright = 0;
-        targetDim = 0;
+        if (radiusCategory === "dim") {
+            targetDim = Math.max(targetBright, targetDim);
+            targetBright = 0;
+        } else if (radiusCategory === "off") {
+            targetBright = 0;
+            targetDim = 0;
+        }
     }
 
-    // 3. INJECT RADII INTO THE DATABASE UPDATE
     if (isToken) {
         updateData.light = updateData.light || {};
         updateData.light.bright = targetBright;
         updateData.light.dim = Math.max(targetBright, targetDim);
+        updateData.light.priority = targetPriority;
     } else {
         updateData.config = updateData.config || {};
         updateData.config.bright = targetBright;
         updateData.config.dim = Math.max(targetBright, targetDim);
+        updateData.config.priority = targetPriority;
     }
 }
 

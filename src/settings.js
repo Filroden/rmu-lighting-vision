@@ -9,10 +9,17 @@ export function registerSettings() {
     game.settings.register("rmu-lighting-vision", "magicalLightDegrades", {
         name: "rmu.settings.magicalLightDegrades.name",
         hint: "rmu.settings.magicalLightDegrades.hint",
-        scope: "world", // Only the GM can alter this setting
-        config: true, // Expose this setting in the UI
+        scope: "world",
+        config: true,
         type: Boolean,
-        default: false, // Defaulting to false (magic doesn't degrade) until the official ruling
+        default: false,
+        onChange: async () => {
+            const isEnabled = game.settings.get("rmu-lighting-vision", "enableLightingEngine");
+            if (isEnabled) {
+                // Instantly sweeps the canvas when the GM toggles the setting
+                await performWorldSweep(true);
+            }
+        },
     });
 
     // Setting 1: How RMU Light Tiers map to Foundry Light Radii
@@ -51,7 +58,7 @@ export function registerSettings() {
         requiresReload: true,
     });
 
-    // 1. Hidden State Tracker
+    // Hidden State Tracker
     game.settings.register("rmu-lighting-vision", "enableLightingEngine", {
         name: "Engine Active",
         scope: "world",
@@ -60,13 +67,20 @@ export function registerSettings() {
         default: true,
     });
 
-    // 2. Migration Menu Button
+    // Migration Menu Button
     game.settings.registerMenu("rmu-lighting-vision", "migrationMenu", {
         name: "rmu.settings.migrationMenu.name",
         label: "rmu.settings.migrationMenu.label",
         hint: "rmu.settings.migrationMenu.hint",
-        icon: "fas fa-exchange-alt",
         type: RMUMigrationMenu, // Links to FormApplication in migration.js
         restricted: true, // GM only
+    });
+
+    // Hidden flag to show initial welcome message
+    game.settings.register("rmu-lighting-vision", "firstBootAddressed", {
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
     });
 }

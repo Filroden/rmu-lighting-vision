@@ -11,7 +11,7 @@
 
 ## Overview
 
-The **RMU Lighting and Vision** module automates the environmental penalties defined in Rolemaster Unified (RMU) Core Law Table 15-7, alongside a suite of Core and Creature Law vision talents.
+The **RMU Lighting and Vision** module implements the rules for visibility in Core Law and automates many vision talents.
 
 ## Features
 
@@ -116,7 +116,7 @@ If you wish to stop using the module, simply open the Control Panel and click **
 The following features are currently in development for full release:
 
 - **Active Effects Integration:** Support for spells and potions temporarily granting vision talents.
-- **Localisation and Metric Support:** I will add the usual es, es-419, fr and sv translations and make sure the module supports metric units.
+- **Metric Support:** I will make sure the module supports metric units.
 
 ## API for System Developers
 

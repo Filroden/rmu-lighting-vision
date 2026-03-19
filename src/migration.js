@@ -1,4 +1,4 @@
-import { getRadiiForTier, getLightMapping } from "./visual-mapping.js";
+import { getRadiiForTier, getLightMapping, getMagicalExtension } from "./visual-mapping.js";
 import { getActorVisionCapabilities } from "./vision-parser.js";
 
 /**
@@ -48,13 +48,13 @@ export class RMUMigrationMenu extends foundry.applications.api.HandlebarsApplica
  */
 export async function performWorldSweep(isEnabled) {
     let updatedCount = 0;
-    const mapping = getLightMapping(); // Fetch the strict/forgiving setting once
+    const mapping = getLightMapping();
 
     for (const scene of game.scenes) {
         const ambientUpdates = [];
         const tokenUpdates = [];
 
-        // 1. Process Ambient Lights (Emission Only)
+        // 1. Process Ambient Lights
         for (const light of scene.lights) {
             const rmuFlags = light.flags?.["rmu-lighting-vision"];
             if (!rmuFlags) continue;
@@ -64,85 +64,51 @@ export async function performWorldSweep(isEnabled) {
                     _id: light.id,
                     config: { bright: rmuFlags.originalRadii.bright, dim: rmuFlags.originalRadii.dim },
                 });
-            } else if (isEnabled && rmuFlags.baseIllumination !== undefined && rmuFlags.baseIllumination !== -1) {
-                const tier = parseInt(rmuFlags.baseIllumination, 10);
-                const isMagical = rmuFlags.isMagical ?? false;
+            } else if (isEnabled) {
+                const rawTier = rmuFlags.baseIllumination ?? -1;
+                const tier = parseInt(rawTier, 10);
+                let isMagical = rmuFlags.isMagical ?? false;
+                const isUtter = rmuFlags.isUtter ?? false;
+
+                // UX Auto-Sync
+                let flagsUpdate = { isSweep: true };
+                if (isUtter) {
+                    isMagical = true;
+                    flagsUpdate.isMagical = true;
+                }
+
+                const isDarknessSource = tier >= 6 || light?.config?.isDarkness === true || (light?.config?.luminosity ?? 0) < 0;
 
                 let targetBright = 0;
                 let targetDim = 0;
+                let targetPriority = 0;
 
-                // Calculate Raw Radii
-                if (!isMagical) {
+                if (isMagical) {
+                    if (isDarknessSource) targetPriority = isUtter ? 15 : 5;
+                    else targetPriority = isUtter ? 20 : 10;
+                }
+
+                if (!isMagical && tier !== -1) {
                     const generatedRadii = getRadiiForTier(tier);
                     targetBright = generatedRadii.bright;
                     targetDim = generatedRadii.dim;
-                } else {
-                    const coreRadius = rmuFlags.magicalRadius ?? light.config?.bright ?? 0;
+                } else if (isMagical) {
+                    const coreRadius = rmuFlags.magicalRadius ?? Math.max(light?.config?.dim ?? 0, light?.config?.bright ?? 0);
                     targetBright = coreRadius;
+                    flagsUpdate.magicalRadius = coreRadius; // Add core radius to the flags update
 
-                    if (!game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
+                    if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
                         targetDim = coreRadius;
                     } else {
-                        const boundaryTier = Math.min(tier + 2, 6);
-                        targetDim = coreRadius + getRadiiForTier(boundaryTier).dim;
+                        const safeTier = tier === -1 ? 0 : tier;
+                        const boundaryTier = Math.min(safeTier + 2, 6);
+                        // Use the diffused extension function
+                        targetDim = coreRadius + getMagicalExtension(boundaryTier);
                     }
                 }
 
-                // Apply Light Mapping Strictness
-                const radiusCategory = mapping[tier];
-                if (radiusCategory === "dim") {
-                    targetDim = Math.max(targetBright, targetDim);
-                    targetBright = 0;
-                } else if (radiusCategory === "off") {
-                    targetBright = 0;
-                    targetDim = 0;
-                }
-
-                ambientUpdates.push({
-                    _id: light.id,
-                    config: { bright: targetBright, dim: Math.max(targetBright, targetDim) },
-                });
-            }
-        }
-
-        // 2. Process Tokens (Emission + Vision)
-        for (const token of scene.tokens) {
-            const rmuFlags = token.flags?.["rmu-lighting-vision"];
-            const actor = token.actor;
-            let tokenPatch = { _id: token.id };
-            let requiresUpdate = false;
-
-            // --- Handle Token Emission (Light) ---
-            if (rmuFlags) {
-                if (!isEnabled && rmuFlags.originalRadii) {
-                    tokenPatch.light = { bright: rmuFlags.originalRadii.bright, dim: rmuFlags.originalRadii.dim };
-                    requiresUpdate = true;
-                } else if (isEnabled && rmuFlags.baseIllumination !== undefined && rmuFlags.baseIllumination !== -1) {
-                    const tier = parseInt(rmuFlags.baseIllumination, 10);
-                    const isMagical = rmuFlags.isMagical ?? false;
-
-                    let targetBright = 0;
-                    let targetDim = 0;
-
-                    // Calculate Raw Radii
-                    if (!isMagical) {
-                        const generatedRadii = getRadiiForTier(tier);
-                        targetBright = generatedRadii.bright;
-                        targetDim = generatedRadii.dim;
-                    } else {
-                        // FIXED BUG: Changed `light.config` to `token.light` to prevent ReferenceError
-                        const coreRadius = rmuFlags.magicalRadius ?? token.light?.bright ?? 0;
-                        targetBright = coreRadius;
-
-                        if (!game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
-                            targetDim = coreRadius;
-                        } else {
-                            const boundaryTier = Math.min(tier + 2, 6);
-                            targetDim = coreRadius + getRadiiForTier(boundaryTier).dim;
-                        }
-                    }
-
-                    // Apply Light Mapping Strictness
+                // Bypass the mapping crusher
+                if (!isDarknessSource && tier !== -1) {
                     const radiusCategory = mapping[tier];
                     if (radiusCategory === "dim") {
                         targetDim = Math.max(targetBright, targetDim);
@@ -151,8 +117,90 @@ export async function performWorldSweep(isEnabled) {
                         targetBright = 0;
                         targetDim = 0;
                     }
+                }
 
-                    tokenPatch.light = { bright: targetBright, dim: Math.max(targetBright, targetDim) };
+                ambientUpdates.push({
+                    _id: light.id,
+                    flags: { "rmu-lighting-vision": flagsUpdate },
+                    config: {
+                        bright: targetBright,
+                        dim: Math.max(targetBright, targetDim),
+                        priority: targetPriority,
+                    },
+                });
+            }
+        }
+
+        // 2. Process Tokens
+        for (const token of scene.tokens) {
+            const rmuFlags = token.flags?.["rmu-lighting-vision"];
+            const actor = token.actor;
+            let tokenPatch = { _id: token.id };
+            let requiresUpdate = false;
+
+            if (rmuFlags) {
+                if (!isEnabled && rmuFlags.originalRadii) {
+                    tokenPatch.light = { bright: rmuFlags.originalRadii.bright, dim: rmuFlags.originalRadii.dim };
+                    requiresUpdate = true;
+                } else if (isEnabled) {
+                    const rawTier = rmuFlags.baseIllumination ?? -1;
+                    const tier = parseInt(rawTier, 10);
+                    let isMagical = rmuFlags.isMagical ?? false;
+                    const isUtter = rmuFlags.isUtter ?? false;
+
+                    let flagsUpdate = { isSweep: true };
+                    if (isUtter) {
+                        isMagical = true;
+                        flagsUpdate.isMagical = true;
+                    }
+
+                    const isDarknessSource = tier >= 6 || token?.light?.isDarkness === true || (token?.light?.luminosity ?? 0) < 0;
+
+                    let targetBright = 0;
+                    let targetDim = 0;
+                    let targetPriority = 0;
+
+                    if (isMagical) {
+                        if (isDarknessSource) targetPriority = isUtter ? 15 : 5;
+                        else targetPriority = isUtter ? 20 : 10;
+                    }
+
+                    if (!isMagical && tier !== -1) {
+                        const generatedRadii = getRadiiForTier(tier);
+                        targetBright = generatedRadii.bright;
+                        targetDim = generatedRadii.dim;
+                    } else if (isMagical) {
+                        const coreRadius = rmuFlags.magicalRadius ?? Math.max(token?.light?.dim ?? 0, token?.light?.bright ?? 0);
+                        targetBright = coreRadius;
+                        flagsUpdate.magicalRadius = coreRadius;
+
+                        if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
+                            targetDim = coreRadius;
+                        } else {
+                            const safeTier = tier === -1 ? 0 : tier;
+                            const boundaryTier = Math.min(safeTier + 2, 6);
+                            targetDim = coreRadius + getMagicalExtension(boundaryTier);
+                        }
+                    }
+
+                    // Bypass the mapping crusher
+                    if (!isDarknessSource && tier !== -1) {
+                        const radiusCategory = mapping[tier];
+                        if (radiusCategory === "dim") {
+                            targetDim = Math.max(targetBright, targetDim);
+                            targetBright = 0;
+                        } else if (radiusCategory === "off") {
+                            targetBright = 0;
+                            targetDim = 0;
+                        }
+                    }
+
+                    tokenPatch.flags = { "rmu-lighting-vision": flagsUpdate };
+                    tokenPatch.light = {
+                        bright: targetBright,
+                        dim: Math.max(targetBright, targetDim),
+                        priority: targetPriority,
+                    };
                     requiresUpdate = true;
                 }
             }
@@ -172,7 +220,6 @@ export async function performWorldSweep(isEnabled) {
                 let optimalMode = "basic";
                 let optimalRange = 0;
 
-                // HIERARCHY: Checks the most powerful vision modes first and checks for combos
                 if (nativeVision.hasDemonSight) {
                     optimalMode = "rmuDemonSight";
                     optimalRange = nativeVision.demonSightRange;
@@ -203,7 +250,6 @@ export async function performWorldSweep(isEnabled) {
             }
         }
 
-        // Execute updates for the current scene
         if (ambientUpdates.length > 0) {
             await scene.updateEmbeddedDocuments("AmbientLight", ambientUpdates);
             updatedCount += ambientUpdates.length;

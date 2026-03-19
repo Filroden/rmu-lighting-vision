@@ -14,60 +14,65 @@ function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
     let effectiveBase = parseInt(baseTier, 10);
 
     if (isMagical) {
-        // Inside the spell's radius, the light is perfect (diffuse/ambient)
         if (distance <= maxRadius) return effectiveBase;
 
-        // Outside the radius, check the GM setting
         const magicDegrades = game.settings.get("rmu-lighting-vision", "magicalLightDegrades");
+        if (!magicDegrades) return 6;
 
-        if (!magicDegrades) {
-            return 6; // Strict mode: Hard edge, pitch black immediately beyond the radius
+        effectiveBase = Math.min(baseTier + 2, 6);
+        effectiveDistance = Math.max(0, distance - maxRadius);
+
+        // The shifted threshold array simulating the steep diffused drop-off
+        const magicalThresholds = [30, 100, 300, 1000, 3000];
+        let stepsDegraded = 0;
+
+        for (const threshold of magicalThresholds) {
+            if (effectiveDistance > threshold) stepsDegraded++;
+            else break;
         }
 
-        // Designer's Mode: Drops 2 levels immediately outside the boundary
-        effectiveBase = Math.min(baseTier + 2, 6);
-        // Shift the distance calculation so degradation starts at the edge of the spell, not the center
-        effectiveDistance = Math.max(0, distance - maxRadius);
+        return Math.min(effectiveBase + stepsDegraded, 6);
     }
 
+    // Standard Natural Light
     const thresholds = [10, 30, 100, 300, 1000, 3000];
     let stepsDegraded = 0;
 
     for (const threshold of thresholds) {
-        if (effectiveDistance > threshold) {
-            stepsDegraded++;
-        } else {
-            break;
-        }
+        if (effectiveDistance > threshold) stepsDegraded++;
+        else break;
     }
 
     return Math.min(effectiveBase + stepsDegraded, 6);
 }
 
 /**
- * Iterates over all light sources to find the best illumination for a specific point.
+ * Iterates over all light sources to find the best illumination for a specific point,
+ * strictly enforcing the RMU Utter-tier and Magical hierarchies.
  * @param {Object} targetPoint - The {x, y} coordinates being illuminated.
  * @returns {number} The lowest (brightest) light tier affecting the point.
  */
 function getBestIlluminationTier(targetPoint) {
-    let bestTier = 6;
+    let globalAmbientTier = 6;
     if (canvas.scene) {
-        // Verify Global Illumination is actually enabled before granting ambient light
         const isGlobalLightEnabled = canvas.scene.environment?.globalLight?.enabled ?? canvas.scene.globalLight ?? false;
-
         if (isGlobalLightEnabled) {
             const darkness = canvas.scene.environment?.darknessLevel ?? canvas.scene.darkness;
-            if (darkness === 0) bestTier = 0;
-            else if (darkness <= 0.25) bestTier = 1;
-            else if (darkness <= 0.5) bestTier = 2;
-            else if (darkness <= 0.75) bestTier = 4;
-            else bestTier = 6;
+            if (darkness === 0) globalAmbientTier = 0;
+            else if (darkness <= 0.25) globalAmbientTier = 1;
+            else if (darkness <= 0.5) globalAmbientTier = 2;
+            else if (darkness <= 0.75) globalAmbientTier = 4;
+            else globalAmbientTier = 6;
         }
     }
 
+    // Tracker Buckets for the Absolute Hierarchy
+    let inUtterdark = false;
     let inMagicalDarkness = false;
+    let bestUtterlightTier = null;
+    let bestMagicalTier = null;
+    let bestMundaneTier = globalAmbientTier;
 
-    // 2. Safely gather all active lights
     const activeAmbientLights = canvas.scene.lights.filter((l) => !l.hidden);
     const activeTokenLights = canvas.scene.tokens.filter((t) => !t.hidden && (t.light?.dim > 0 || t.light?.bright > 0));
     const allLightDocs = [...activeAmbientLights, ...activeTokenLights];
@@ -75,12 +80,12 @@ function getBestIlluminationTier(targetPoint) {
     for (const lightDoc of allLightDocs) {
         const rmuFlags = lightDoc.flags?.["rmu-lighting-vision"] || {};
 
-        // 3. Parse the string and explicitly ignore tokens set to "-1" (None)
         const rawTier = rmuFlags.baseIllumination ?? 0;
         const baseIllumination = parseInt(rawTier, 10);
         if (isNaN(baseIllumination) || baseIllumination === -1) continue;
 
         const isMagical = rmuFlags.isMagical ?? false;
+        const isUtter = rmuFlags.isUtter ?? false; // Grab the new UI flag
         const isDarknessSource = (lightDoc.config?.luminosity ?? lightDoc.light?.luminosity) < 0;
 
         let lightCenter;
@@ -102,20 +107,43 @@ function getBestIlluminationTier(targetPoint) {
 
         if (!isMagical && distance > maxRadius) continue;
 
+        // Categorize Darkness Sources
         if (isDarknessSource) {
-            inMagicalDarkness = true;
+            if (isUtter) inUtterdark = true;
+            else inMagicalDarkness = true;
             continue;
         }
 
         const calculatedTier = getDegradedTier(distance, baseIllumination, isMagical, maxRadius);
-        if (calculatedTier < bestTier) bestTier = calculatedTier;
+
+        // Categorize Light Sources
+        if (isUtter) {
+            if (bestUtterlightTier === null || calculatedTier < bestUtterlightTier) bestUtterlightTier = calculatedTier;
+        } else if (isMagical) {
+            if (bestMagicalTier === null || calculatedTier < bestMagicalTier) bestMagicalTier = calculatedTier;
+        } else {
+            if (calculatedTier < bestMundaneTier) bestMundaneTier = calculatedTier;
+        }
     }
 
-    if (inMagicalDarkness) {
-        bestTier = Math.max(bestTier, 5); // RMU Extremely Dark
-    }
+    // =========================================================
+    // THE ABSOLUTE HIERARCHY EVALUATION
+    // =========================================================
 
-    return bestTier;
+    // 1. Utterlight suppresses all darkness (magical and mundane)
+    if (bestUtterlightTier !== null) return bestUtterlightTier;
+
+    // 2. Utterdark suppresses all non-Utter light
+    if (inUtterdark) return 6; // Pitch Black
+
+    // 3. Magical Light overcomes normal Magical Darkness
+    if (bestMagicalTier !== null) return bestMagicalTier;
+
+    // 4. Magical Darkness hides non-magical light
+    if (inMagicalDarkness) return 5; // Extremely Dark
+
+    // 5. Normal Environment
+    return bestMundaneTier;
 }
 
 /**
