@@ -1,27 +1,22 @@
-/**
- * Central configuration matrix for translating RMU mechanical tiers into VTT visual states.
- * Adjust these arrays to test different community rulings.
- */
-export const VISUAL_TIERS = {
-    // RMU Tiers that render as fully lit
-    brightTiers: [0, 1, 2],
-    // RMU Tiers that render as shadowy/dim
-    dimTiers: [3, 4],
-    // RMU Tiers that are swallowed by fog of war
-    unlitTiers: [5, 6],
-};
+function getDynamicTiers() {
+    const customMap = game.settings.get("rmu-lighting-vision", "customMapping") || {};
+    const mapping = customMap.canvas || { 0: "bright", 1: "bright", 2: "dim", 3: "dim", 4: "dim", 5: "off", 6: "off" };
 
-const DISTANCE_THRESHOLDS = [10, 30, 100, 300, 1000, 3000];
+    const tiers = { brightTiers: [], dimTiers: [], unlitTiers: [] };
 
-/**
- * Dynamically calculates the Foundry VTT bright and dim radii for a given starting tier
- * by cross-referencing the distance thresholds against the tier matrix.
- * @param {number} baseTier - The starting RMU illumination tier.
- * @returns {Object} An object containing { bright, dim } distances.
- */
+    for (let i = 0; i <= 6; i++) {
+        if (mapping[i] === "bright") tiers.brightTiers.push(i);
+        else if (mapping[i] === "dim") tiers.dimTiers.push(i);
+        else tiers.unlitTiers.push(i);
+    }
+    return tiers;
+}
+
 export function getRadiiForTier(baseTier) {
     if (baseTier === -1 || baseTier === undefined) return { bright: 0, dim: 0 };
 
+    const dynamicTiers = getDynamicTiers();
+    const DISTANCE_THRESHOLDS = [10, 30, 100, 300, 1000, 3000];
     let bright = 0;
     let dim = 0;
 
@@ -29,10 +24,10 @@ export function getRadiiForTier(baseTier) {
         const currentTier = Math.min(baseTier + i, 6);
         const distance = DISTANCE_THRESHOLDS[i];
 
-        if (VISUAL_TIERS.brightTiers.includes(currentTier)) {
+        if (dynamicTiers.brightTiers.includes(currentTier)) {
             bright = distance;
-            dim = distance; // Foundry requires dim to be at least equal to bright
-        } else if (VISUAL_TIERS.dimTiers.includes(currentTier)) {
+            dim = distance;
+        } else if (dynamicTiers.dimTiers.includes(currentTier)) {
             dim = distance;
         }
     }
@@ -40,32 +35,24 @@ export function getRadiiForTier(baseTier) {
     return { bright, dim };
 }
 
-/**
- * Retrieves the active light mapping configuration object.
- */
 export function getLightMapping() {
-    const mode = game.settings.get("rmu-lighting-vision", "lightMapping");
+    const customMap = game.settings.get("rmu-lighting-vision", "customMapping") || {};
+    return customMap.canvas || { 0: "bright", 1: "bright", 2: "dim", 3: "dim", 4: "dim", 5: "off", 6: "off" };
+}
 
-    if (mode === "strict") {
-        return {
-            0: "bright",
-            1: "bright",
-            2: "dim",
-            3: "dim",
-            4: "dim",
-            5: "off",
-            6: "off",
-        };
+export function getMagicalExtension(auraStartTier) {
+    const dynamicTiers = getDynamicTiers();
+    const DISTANCE_THRESHOLDS = [10, 30, 100, 300, 1000, 3000];
+    let maxExtension = 0;
+    let thresholdIndex = 1;
+
+    for (let tier = auraStartTier; tier <= 6; tier++) {
+        if (dynamicTiers.unlitTiers.includes(tier)) break;
+
+        if (dynamicTiers.dimTiers.includes(tier) || dynamicTiers.brightTiers.includes(tier)) {
+            maxExtension = DISTANCE_THRESHOLDS[thresholdIndex];
+            thresholdIndex++;
+        }
     }
-
-    // Default: Forgiving
-    return {
-        0: "bright",
-        1: "bright",
-        2: "bright",
-        3: "dim",
-        4: "dim",
-        5: "off",
-        6: "off",
-    };
+    return maxExtension;
 }

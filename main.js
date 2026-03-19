@@ -2,6 +2,8 @@ import { registerVisionModes, registerDetectionModes } from "./src/config.js";
 import { registerSettings } from "./src/settings.js";
 import { determineLightingState } from "./src/calculator.js";
 import { outputLightingToChat } from "./src/chat.js";
+import { registerVisionSourceOverride } from "./src/rmu-vision-source.js";
+import { performWorldSweep } from "./src/migration.js";
 import "./src/ui.js";
 import "./src/light-sync.js";
 import "./src/vision-sync.js";
@@ -14,7 +16,11 @@ Hooks.once("init", async () => {
     console.log("RMU Lighting & Vision | Initialising module");
 
     // Preload Handlebars templates to ensure instantaneous rendering
-    await foundry.applications.handlebars.loadTemplates(["modules/rmu-lighting-vision/templates/light-settings.hbs", "modules/rmu-lighting-vision/templates/chat-message.hbs"]);
+    await foundry.applications.handlebars.loadTemplates([
+        "modules/rmu-lighting-vision/templates/light-settings.hbs",
+        "modules/rmu-lighting-vision/templates/chat-message.hbs",
+        "modules/rmu-lighting-vision/templates/rmu-config.hbs",
+    ]);
 
     // Register module-specific settings (e.g., magical light degradation toggle)
     registerSettings();
@@ -24,6 +30,9 @@ Hooks.once("init", async () => {
 
     // Register Canvas detection modes
     registerDetectionModes();
+
+    // Inject the core overrides
+    registerVisionSourceOverride();
 
     // Expose the public API for the RMU system developer to ingest
     const module = game.modules.get("rmu-lighting-vision");
@@ -83,4 +92,40 @@ Hooks.once("init", async () => {
             return true;
         },
     });
+});
+
+Hooks.once("ready", async () => {
+    if (!game.user.isGM) return;
+
+    const firstBootAddressed = game.settings.get("rmu-lighting-vision", "firstBootAddressed");
+
+    if (!firstBootAddressed) {
+        const { DialogV2 } = foundry.applications.api;
+
+        await DialogV2.confirm({
+            window: { title: game.i18n.localize("rmu.migration.welcome.title") },
+            content: `
+                <div class="rmu-welcome-dialog">
+                    <p>${game.i18n.localize("rmu.migration.welcome.p1")}</p>
+                    <p>${game.i18n.localize("rmu.migration.welcome.p2")}</p>
+                    <p>${game.i18n.localize("rmu.migration.welcome.p3")}</p>
+                </div>
+            `,
+            yes: {
+                label: game.i18n.localize("rmu.migration.welcome.yes"),
+                callback: async () => {
+                    ui.notifications.info(game.i18n.localize("rmu.migration.inProgress"));
+                    await game.settings.set("rmu-lighting-vision", "enableLightingEngine", true);
+                    await performWorldSweep(true);
+                    await game.settings.set("rmu-lighting-vision", "firstBootAddressed", true);
+                },
+            },
+            no: {
+                label: game.i18n.localize("rmu.migration.welcome.no"),
+                callback: async () => {
+                    await game.settings.set("rmu-lighting-vision", "firstBootAddressed", true);
+                },
+            },
+        });
+    }
 });

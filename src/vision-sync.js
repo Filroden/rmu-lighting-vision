@@ -53,17 +53,6 @@ function autoConfigureTokenVision(tokenDoc) {
         },
         detectionModes: nativeVision.detectionModes,
     });
-
-    // Inject the optimal vision settings, detection modes, and the backup into the token's source data
-    tokenDoc.updateSource({
-        "flags.rmu-lighting-vision.originalSight": originalSight,
-        sight: {
-            enabled: true,
-            visionMode: optimalMode,
-            range: optimalRange,
-        },
-        detectionModes: nativeVision.detectionModes, // Inject the parsed detection modes
-    });
 }
 
 Hooks.on("preCreateToken", autoConfigureTokenVision);

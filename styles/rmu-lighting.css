@@ -137,3 +137,132 @@
     margin: 0 !important;
     padding: 0 !important;
 }
+
+/* --- 4. Dialog Formatting --- */
+.rmu-welcome-dialog p {
+    margin: 0 0 var(--filroden-space-s) 0;
+    color: var(--filroden-color-text-main);
+    line-height: 1.3;
+}
+
+/* --- 5. Unified Configuration Panel --- */
+
+.rmu-lighting-app .window-content {
+    background-color: var(--filroden-color-bg-darkest);
+}
+
+/* Tab Navigation */
+.rmu-config-form .sheet-tabs {
+    flex: 0 0 30px;
+    display: flex;
+    border-bottom: var(--filroden-border-main);
+    margin-bottom: var(--filroden-space-m);
+}
+
+.rmu-config-form .sheet-tabs .item {
+    flex: 1;
+    text-align: center;
+    padding: var(--filroden-space-s) 0;
+    color: var(--filroden-color-text-muted);
+    font-family: var(--filroden-font-family);
+    font-weight: var(--filroden-font-weight-bold);
+    letter-spacing: var(--filroden-letter-spacing-wide);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s, border-bottom-color 0.2s;
+}
+
+.rmu-config-form .sheet-tabs .item:hover {
+    color: var(--filroden-color-text-main);
+}
+
+.rmu-config-form .sheet-tabs .item.active {
+    color: var(--filroden-color-text-accent);
+    border-bottom-color: var(--filroden-color-text-accent);
+}
+
+/* Mapping Table Formatting */
+.rmu-mapping-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--filroden-space-m);
+    color: var(--filroden-color-text-main);
+    font-family: var(--filroden-font-family);
+    border: var(--filroden-border-main);
+    border-radius: var(--filroden-radius-medium);
+    overflow: hidden;
+}
+
+.rmu-mapping-table thead {
+    background-color: var(--filroden-color-bg-medium-solid);
+    color: var(--filroden-color-text-accent);
+}
+
+.rmu-mapping-table th {
+    padding: var(--filroden-space-m) var(--filroden-space-s);
+    text-align: center;
+    font-weight: var(--filroden-font-weight-bold);
+    letter-spacing: var(--filroden-letter-spacing-wide);
+    border-bottom: 2px solid var(--filroden-color-text-accent);
+}
+
+.rmu-mapping-table th:first-child {
+    text-align: left;
+}
+
+.rmu-mapping-table td {
+    padding: var(--filroden-space-s);
+    text-align: center;
+}
+
+.rmu-mapping-table td:first-child {
+    text-align: left;
+    color: var(--filroden-color-text-muted);
+}
+
+.rmu-mapping-table tr {
+    background-color: var(--filroden-color-bg-medium-solid);
+}
+
+/* Dropdown Selects within the Table */
+.rmu-mapping-table select {
+    width: 100%;
+    background-color: var(--filroden-color-bg-darkest);
+    color: var(--filroden-color-text-main);
+    border: var(--filroden-border-main);
+    border-radius: var(--filroden-radius-small);
+    padding: var(--filroden-space-xs);
+    font-family: var(--filroden-font-family);
+}
+
+.rmu-mapping-table select:focus {
+    border-color: var(--filroden-color-text-accent);
+    outline: none;
+    box-shadow: var(--filroden-shadow-focus);
+}
+
+.rmu-mapping-table select option {
+    background-color: var(--visage-color-bg-darkest) !important; 
+    color: var(--visage-color-text-main-solid) !important;
+}
+
+/* Buttons */
+.rmu-config-form button {
+    font-family: var(--filroden-font-family);
+    letter-spacing: var(--filroden-letter-spacing-wide);
+    border-radius: var(--filroden-radius-small);
+    transition: all 0.2s ease;
+    color: var(--filroden-color-text-main-solid);
+}
+
+.rmu-config-form button[type="submit"] {
+    background-color: var(--filroden-color-bg-medium-solid);
+    color: var(--filroden-color-text-accent);
+    border: 1px solid var(--filroden-color-text-accent);
+}
+
+.rmu-config-form button[type="submit"]:hover {
+    background-color: var(--filroden-color-text-accent);
+    color: var(--filroden-color-text-on-accent);
+    box-shadow: var(--filroden-shadow-focus);
+}

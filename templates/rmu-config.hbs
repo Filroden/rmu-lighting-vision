@@ -1,0 +1,87 @@
+<form class="rmu-config-form" autocomplete="off">
+    <nav class="sheet-tabs tabs" data-group="primary">
+        <a class="item {{tabState.canvas}}" data-action="tab" data-group="primary" data-tab="canvas">{{localize "rmu.settings.tabs.canvas"}}</a>
+        <a class="item {{tabState.vision}}" data-action="tab" data-group="primary" data-tab="vision">{{localize "rmu.settings.tabs.vision"}}</a>
+        <a class="item {{tabState.system}}" data-action="tab" data-group="primary" data-tab="system">{{localize "rmu.settings.tabs.system"}}</a>
+    </nav>
+
+    <section class="content">
+        <section class="tab {{tabState.canvas}}" data-tab="canvas" data-group="primary">
+            <p class="notes">{{localize "rmu.settings.canvas.hint"}}</p>
+            
+            <table class="rmu-mapping-table">
+                <thead>
+                    <tr>
+                        <th>{{localize "rmu.settings.mapping.tier"}}</th>
+                        <th>{{localize "rmu.settings.mapping.canvasRender"}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each canvasTiers as |tier|}}
+                    <tr>
+                        <td><strong>{{tier.label}}</strong></td>
+                        <td>
+                            <select name="canvas.{{tier.id}}">
+                                {{selectOptions ../choices selected=tier.canvas}}
+                            </select>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            </section>
+
+        <section class="tab {{tabState.vision}}" data-tab="vision" data-group="primary">
+            <p class="notes">{{localize "rmu.settings.vision.hint"}}</p>
+            
+            <table class="rmu-mapping-table">
+                <thead>
+                    <tr>
+                        <th>{{localize "rmu.settings.mapping.canvasCondition"}}</th>
+                        <th>{{localize "rmu.settings.mapping.basicVision"}}</th>
+                        <th>{{localize "rmu.settings.mapping.nightvision"}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each visionLevels as |level|}}
+                    <tr>
+                        <td><strong>{{level.label}}</strong></td>
+                        <td>
+                            <select name="vision.basic.{{level.id}}">
+                                {{selectOptions ../choices selected=level.basic}}
+                            </select>
+                        </td>
+                        <td>
+                            <select name="vision.nightvision.{{level.id}}">
+                                {{selectOptions ../choices selected=level.nightvision}}
+                            </select>
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            </section>
+
+        <section class="tab {{tabState.system}}" data-tab="system" data-group="primary">
+            <p class="notes">{{localize "rmu.migration.description"}}</p>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <button type="button" data-action="applyRMU" style="background: rgba(0, 255, 0, 0.1); border: 1px solid green; width: 100%;">
+                    {{localize "rmu.migration.applyRMU"}}
+                </button>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <button type="button" data-action="restoreFoundry" style="background: rgba(255, 0, 0, 0.1); border: 1px solid red; width: 100%;">
+                    {{localize "rmu.migration.restoreFoundry"}}
+                </button>
+            </div>
+        </section>
+    </section>
+
+    <footer class="sheet-footer form-group" style="margin-top: 20px; padding-top: 15px; border-top: var(--filroden-border-main);">
+        <button type="button" data-action="saveMapping">
+            </i> {{localize "rmu.settings.mapping.save"}}
+        </button>
+    </footer>
+</form>
