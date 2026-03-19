@@ -16,7 +16,11 @@ Hooks.once("init", async () => {
     console.log("RMU Lighting & Vision | Initialising module");
 
     // Preload Handlebars templates to ensure instantaneous rendering
-    await foundry.applications.handlebars.loadTemplates(["modules/rmu-lighting-vision/templates/light-settings.hbs", "modules/rmu-lighting-vision/templates/chat-message.hbs"]);
+    await foundry.applications.handlebars.loadTemplates([
+        "modules/rmu-lighting-vision/templates/light-settings.hbs",
+        "modules/rmu-lighting-vision/templates/chat-message.hbs",
+        "modules/rmu-lighting-vision/templates/rmu-config.hbs",
+    ]);
 
     // Register module-specific settings (e.g., magical light degradation toggle)
     registerSettings();

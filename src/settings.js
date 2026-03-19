@@ -1,11 +1,7 @@
-import { performWorldSweep, RMUMigrationMenu } from "./migration.js";
+// file: src/settings.js
+import { performWorldSweep, RMUConfigApp } from "./migration.js";
 
-/**
- * Registers all module-specific settings in the Foundry VTT settings menu.
- * This should be called during the 'init' hook.
- */
 export function registerSettings() {
-    // Toggle for whether magical light degrades over distance like natural light
     game.settings.register("rmu-lighting-vision", "magicalLightDegrades", {
         name: "rmu.settings.magicalLightDegrades.name",
         hint: "rmu.settings.magicalLightDegrades.hint",
@@ -14,69 +10,43 @@ export function registerSettings() {
         type: Boolean,
         default: false,
         onChange: async () => {
-            const isEnabled = game.settings.get("rmu-lighting-vision", "enableLightingEngine");
-            if (isEnabled) {
-                // Instantly sweeps the canvas when the GM toggles the setting
+            if (game.settings.get("rmu-lighting-vision", "enableLightingEngine")) {
                 await performWorldSweep(true);
             }
         },
     });
 
-    // Setting 1: How RMU Light Tiers map to Foundry Light Radii
-    game.settings.register("rmu-lighting-vision", "lightMapping", {
-        name: "rmu.settings.lightMapping.name",
-        hint: "rmu.settings.lightMapping.hint",
+    // The unified JSON object storing all custom mapping logic
+    game.settings.register("rmu-lighting-vision", "customMapping", {
         scope: "world",
-        config: true,
-        type: String,
-        choices: {
-            forgiving: "rmu.settings.lightMapping.forgiving",
-            strict: "rmu.settings.lightMapping.strict",
-        },
-        default: "forgiving",
-        requiresReload: true,
-        onChange: async () => {
-            const isEnabled = game.settings.get("rmu-lighting-vision", "enableLightingEngine");
-            if (isEnabled) {
-                await performWorldSweep(true);
-            }
+        config: false,
+        type: Object,
+        default: {
+            canvas: { 0: "bright", 1: "bright", 2: "bright", 3: "dim", 4: "dim", 5: "off", 6: "off" },
+            vision: {
+                basic: { bright: "bright", dim: "off", off: "off" }, // Default: Gritty
+                nightvision: { bright: "bright", dim: "dim", off: "dim" },
+            },
         },
     });
 
-    // Setting 2: How Vision Modes perceive the environment
-    game.settings.register("rmu-lighting-vision", "visionStrictness", {
-        name: "rmu.settings.visionStrictness.name",
-        hint: "rmu.settings.visionStrictness.hint",
-        scope: "world",
-        config: true,
-        type: String,
-        choices: {
-            standard: "rmu.settings.visionStrictness.standard", // Shadowy/Dark -> Dim
-            gritty: "rmu.settings.visionStrictness.gritty", // Shadowy/Dark -> Unlit
-        },
-        default: "gritty",
-        requiresReload: true,
-    });
-
-    // Hidden State Tracker
     game.settings.register("rmu-lighting-vision", "enableLightingEngine", {
         name: "Engine Active",
         scope: "world",
-        config: false, // Hides it from the UI completely
+        config: false,
         type: Boolean,
         default: true,
     });
 
-    // Migration Menu Button
-    game.settings.registerMenu("rmu-lighting-vision", "migrationMenu", {
-        name: "rmu.settings.migrationMenu.name",
-        label: "rmu.settings.migrationMenu.label",
-        hint: "rmu.settings.migrationMenu.hint",
-        type: RMUMigrationMenu, // Links to FormApplication in migration.js
-        restricted: true, // GM only
+    // The new unified Configuration Panel
+    game.settings.registerMenu("rmu-lighting-vision", "configurationMenu", {
+        name: "rmu.settings.configMenu.name",
+        label: "rmu.settings.configMenu.label",
+        hint: "rmu.settings.configMenu.hint",
+        type: RMUConfigApp,
+        restricted: true,
     });
 
-    // Hidden flag to show initial welcome message
     game.settings.register("rmu-lighting-vision", "firstBootAddressed", {
         scope: "world",
         config: false,

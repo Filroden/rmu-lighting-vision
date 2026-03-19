@@ -22,8 +22,6 @@ The **RMU Lighting and Vision** module implements the rules for visibility in Co
 
 ## Supported Vision & Detection Talents (Beta Configuration)
 
-*Note for Beta Testers: To facilitate testing, the mechanical configurations for these talents are currently hardcoded. Future updates will move these thresholds into configurable Game Settings.*
-
 ### 1. Stylised Vision Modes (Canvas Shaders)
 
 These talents completely alter how the player sees the VTT canvas, melting away shadows and applying custom WebGL colour tints.
@@ -54,69 +52,54 @@ These talents do not colour the canvas, but act as a radar. They pierce physical
 3. **Automated Tokens:** Simply drag an Actor with recognised vision talents onto the canvas. The module will automatically configure their Vision Modes and Detection Ranges.
 4. **Calculate Penalties:** Select your token, target an enemy token, and press `Shift + L` to output the exact environmental modifiers to the chat.
 
-## Visual Mapping & Game Settings
+## Lighting & Vision Configuration Panel
 
-Because Rolemaster Unified features a 7-tier lighting system, and Foundry VTT's rendering engine only supports 3 distinct visual states (Bright, Dim, and Unlit), the module must group the RMU tiers into visual brackets.
+Because Rolemaster Unified features a 7-tier lighting system, and Foundry VTT's rendering engine only natively supports 3 distinct visual states (Bright, Dim, and Unlit), the module must group the RMU tiers into visual brackets.
 
-The underlying math and `Shift + L` chat card penalties will **always** calculate the true 7-tier RMU values perfectly, regardless of how the VTT visually renders them. However, GMs can customise how these tiers are painted onto the canvas using two specific Game Settings:
+The underlying math and `Shift + L` chat card penalties will **always** calculate the true 7-tier RMU values perfectly, regardless of how the VTT renders them visually. However, GMs can fully customise the visual translation via the **Lighting & Vision Configuration Panel** found in the module settings.
 
-### 1. Light Mapping (How Sources Emit Light)
+The panel is divided into three tabs:
 
-This setting dictates which RMU tiers are assigned to Foundry's Bright and Dim radii.
+### Tab 1: Canvas Render (Emitted Light)
 
-| RMU Light Level | "Forgiving" Setting | "Strict" Setting |
-| :--- | :--- | :--- |
-| **Bright** | Bright Radius | Bright Radius |
-| **Uneven** | Bright Radius | Bright Radius |
-| **Dim** | Bright Radius | Dim Radius |
-| **Shadowy** | Dim Radius | Dim Radius |
-| **Dark** | Dim Radius | Dim Radius |
-| **Extremely Dark** | Unlit (Off) | Unlit (Off) |
-| **Pitch Black** | Unlit (Off) | Unlit (Off) |
+Define how each of the 7 RMU mechanical tiers is physically painted onto the canvas. This controls the raw environmental lighting (Bright, Dim, or Unlit) before any token vision modes are applied.
 
-### 2. Vision Strictness (How Characters Perceive Light)
+### Tab 2: Vision Modes (Perceived Light)
 
-This setting alters how standard vision (Basic Vision) perceives the "Dim Radius" group (Shadowy/Dark).
+Define how specific token vision modes perceive the raw canvas lighting. For example, you can configure the engine so that areas rendered as "Dim" on the canvas are perceived as "Unlit" by Basic Vision tokens, but perceived as "Bright" by tokens possessing Nightvision.
 
-- **Standard:** Normal vision can see into Shadowy/Dark areas, interpreting them as Dim light.
-- **Gritty:** Normal vision is completely blind in Shadowy/Dark areas. They render as Pitch Black. Nightvision is required to elevate these areas back up to Dim light.
+### Tab 3: System & Migration
 
-| Vision Mode | Standard Setting | Gritty Setting |
-| :--- | :--- | :--- |
-| **Basic Vision** | Sees Group 2 as **Dim** | Sees Group 2 as **Off (Pitch Black)** |
-| **Nightvision** | Sees Group 2 as Bright | Sees Group 2 as **Dim** |
-| **Darkvision** | Sees Group 2 as Bright | Sees Group 2 as Bright |
+A dedicated suite to manage scene updates. Apply the RMU Lighting Engine to sweep the current map and update all tokens/lights, or fully disable the module's engine and restore Foundry VTT native lighting defaults.
+
+*Note: The Configuration Panel features **Hot Reloading**. Clicking Save will instantly recalculate the database and redraw the Canvas WebGL vision masks without requiring a VTT browser refresh.*
 
 ---
 
 ## Migrating Existing Maps & Tokens
 
-If you are installing this module into an ongoing campaign, your existing map assets will not automatically update until they are prompted. To make this easy, the module includes a dedicated **Lighting & Vision Control Panel**.
+If you are installing this module into an ongoing campaign, your existing map assets must be updated to utilise the new RMU properties.
 
-**1. Automating the Scene (Tokens & Lights)**
-To force the module to sweep your current map and apply the correct rules:
+**1. The Initialisation Prompt**
+When the GM first boots a world with this module enabled, a welcome dialogue will appear offering a one-click migration. Accepting this will silently sweep the **entire world**, reading the character sheets of every token across all scenes to inject the correct native vision settings, and mathematically updating all placed light sources.
 
-- Go to **Game Settings** and click **Configure Settings**.
-- Navigate to the **Module Settings** tab and find **RMU Lighting and Vision**.
-- Click the **Open Control Panel** button.
-- Select **Update Scene to RMU Rules**.
-- *Result:* The engine will read the character sheets of every token on the canvas, silently injecting the correct native vision settings (like Darkvision or Life Sense). It will also recalculate the physical light radii of all torches and spells to match your current Strictness settings.
+**2. Manual World Sweeps**
+If you import a new map from a compendium, simply open the **Lighting & Vision Configuration Panel**, navigate to the **System & Migration** tab, and click **Update Scene to RMU Rules**.
 
-**2. Configuring Existing Light Sources (Manual Step)**
+**3. Configuring Existing Light Sources (Manual Step)**
 Unlike vision, the engine cannot automatically guess the narrative intent behind your pre-existing light sources (e.g., whether a placed light was meant to be a torch, a glowing mushroom, or a magical aura).
 
 - By default, the engine will treat all pre-existing Ambient Lights and Token Lights as **Bright Light** (Tier 0).
-- To fix this, you must double-click your existing Ambient Lights (or tokens holding lights) and manually select the correct **RMU Base Illumination** tier from the new dropdown menu in their configuration sheets.
+- To fix this, you must double-click your existing Ambient Lights (or tokens holding lights) and manually select the correct **RMU Base Illumination** tier from the dropdown menu in their configuration sheets.
 
-**3. Uninstalling or Disabling**
-If you wish to stop using the module, simply open the Control Panel and click **Restore Foundry Defaults**. This will strip the custom RMU shaders from your tokens and restore your light radii exactly to where they were before the module was applied.
+**4. Uninstalling or Disabling**
+If you wish to stop using the module, open the **System & Migration** tab and click **Restore Foundry Defaults**. This will strip the custom RMU shaders from your tokens and restore your light radii exactly to where they were before the module was applied.
 
 ## Upcoming Features (Roadmap)
 
 The following features are currently in development for full release:
 
 - **Active Effects Integration:** Support for spells and potions temporarily granting vision talents.
-- **Metric Support:** I will make sure the module supports metric units.
 
 ## API for System Developers
 
@@ -129,5 +112,29 @@ if (lightingModule?.active && lightingModule.api) {
   // Pass the observing token and the target token documents
   const state = lightingModule.api.getLightingState(sourceDoc, targetDoc);
   console.log(state);
+}
+```
+
+**Example JSON Output (showing a successful line of sight check)**
+
+```json
+{
+  "tier": 4,
+  "hasNightvision": false,
+  "hasDarkvision": true,
+  "activeSpecialVision": "thermal",
+  "penaltyFull": 0,
+  "penaltyHalf": 0,
+  "distance": 45.2,
+  "hasLineOfSight": true
+}
+```
+
+**Example JSON Output (showing a blocked line of sight check)**
+
+```json
+{
+  "hasLineOfSight": false,
+  "distance": 45.2
 }
 ```

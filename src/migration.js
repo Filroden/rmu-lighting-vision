@@ -1,44 +1,111 @@
 import { getRadiiForTier, getLightMapping, getMagicalExtension } from "./visual-mapping.js";
 import { getActorVisionCapabilities } from "./vision-parser.js";
+import { registerVisionModes } from "./config.js";
 
-/**
- * Render the Migration Control Panel
- */
-export class RMUMigrationMenu extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+
+export class RMUConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
     static DEFAULT_OPTIONS = {
-        id: "rmu-migration-menu",
+        id: "rmu-config-app",
+        classes: ["rmu-lighting-app"],
         window: {
-            title: "rmu.migration.title",
+            title: "rmu.settings.configMenu.title",
             resizable: false,
         },
-        position: {
-            width: 400,
-            height: "auto",
-        },
+        position: { width: 550, height: "auto" },
         actions: {
-            applyRMU: RMUMigrationMenu._onApplyRMU,
-            restoreFoundry: RMUMigrationMenu._onRestoreFoundry,
+            saveMapping: RMUConfigApp._onSaveMapping,
+            applyRMU: RMUConfigApp._onApplyRMU,
+            restoreFoundry: RMUConfigApp._onRestoreFoundry,
         },
     };
 
     static PARTS = {
-        form: {
-            template: "modules/rmu-lighting-vision/templates/migration-menu.hbs",
-        },
+        form: { template: "modules/rmu-lighting-vision/templates/rmu-config.hbs" },
     };
 
+    tabGroups = { primary: "canvas" };
+
+    async _prepareContext(options) {
+        const context = await super._prepareContext(options);
+        const customMap = game.settings.get("rmu-lighting-vision", "customMapping") || {};
+        const canvasMap = customMap.canvas || {};
+        const visionMap = customMap.vision || { basic: {}, nightvision: {} };
+
+        context.tabState = {
+            canvas: this.tabGroups.primary === "canvas" ? "active" : "",
+            vision: this.tabGroups.primary === "vision" ? "active" : "",
+            system: this.tabGroups.primary === "system" ? "active" : "",
+        };
+
+        context.choices = {
+            bright: game.i18n.localize("rmu.settings.mapping.choices.bright"),
+            dim: game.i18n.localize("rmu.settings.mapping.choices.dim"),
+            off: game.i18n.localize("rmu.settings.mapping.choices.off"),
+        };
+
+        const tierLabels = [
+            game.i18n.localize("rmu.light.tiers.bright"),
+            game.i18n.localize("rmu.light.tiers.uneven"),
+            game.i18n.localize("rmu.light.tiers.dim"),
+            game.i18n.localize("rmu.light.tiers.shadowy"),
+            game.i18n.localize("rmu.light.tiers.dark"),
+            game.i18n.localize("rmu.light.tiers.extremelyDark"),
+            game.i18n.localize("rmu.light.tiers.pitchBlack"),
+        ];
+
+        // Prepare Tab 1 Data
+        context.canvasTiers = tierLabels.map((label, id) => ({
+            id,
+            label,
+            canvas: canvasMap[id] ?? "off",
+        }));
+
+        // Prepare Tab 2 Data
+        context.visionLevels = [
+            { id: "bright", label: context.choices.bright, basic: visionMap.basic.bright, nightvision: visionMap.nightvision.bright },
+            { id: "dim", label: context.choices.dim, basic: visionMap.basic.dim, nightvision: visionMap.nightvision.dim },
+            { id: "off", label: context.choices.off, basic: visionMap.basic.off, nightvision: visionMap.nightvision.off },
+        ];
+
+        return context;
+    }
+
+    static async _onSaveMapping(event, target) {
+        const form = target.closest("form");
+        const formData = new foundry.applications.ux.FormDataExtended(form);
+        const expandedData = foundry.utils.expandObject(formData.object);
+
+        // Save to the database
+        await game.settings.set("rmu-lighting-vision", "customMapping", expandedData);
+        ui.notifications.info(game.i18n.localize("rmu.settings.mapping.savedSuccess"));
+
+        // HOT RELOAD: Rebuild the core Vision Modes instantly using the new data
+        registerVisionModes();
+
+        // Update all physical light radii
+        if (game.settings.get("rmu-lighting-vision", "enableLightingEngine")) {
+            await performWorldSweep(true);
+        }
+
+        // HOT RELOAD: Force the WebGL engine to redraw the vision masks
+        if (canvas.ready) {
+            canvas.perception.update({ initializeVision: true, refreshLighting: true }, true);
+        }
+
+        // Close the window
+        this.close();
+    }
     static async _onApplyRMU(event, target) {
         await game.settings.set("rmu-lighting-vision", "enableLightingEngine", true);
         await performWorldSweep(true);
         ui.notifications.info(game.i18n.localize("rmu.migration.appliedSuccess"));
-        this.close();
     }
 
     static async _onRestoreFoundry(event, target) {
         await game.settings.set("rmu-lighting-vision", "enableLightingEngine", false);
         await performWorldSweep(false);
         ui.notifications.info(game.i18n.localize("rmu.migration.restoredSuccess"));
-        this.close();
     }
 }
 
@@ -93,16 +160,19 @@ export async function performWorldSweep(isEnabled) {
                     targetBright = generatedRadii.bright;
                     targetDim = generatedRadii.dim;
                 } else if (isMagical) {
-                    const coreRadius = rmuFlags.magicalRadius ?? Math.max(light?.config?.dim ?? 0, light?.config?.bright ?? 0);
+                    let coreRadius = rmuFlags.magicalRadius;
+                    if (coreRadius === undefined) {
+                        coreRadius = Math.max(light?.config?.dim ?? 0, light?.config?.bright ?? 0);
+                    }
+
                     targetBright = coreRadius;
-                    flagsUpdate.magicalRadius = coreRadius; // Add core radius to the flags update
+                    flagsUpdate.magicalRadius = coreRadius; // Save the core radius to prevent double-scaling on future sweeps
 
                     if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
                         targetDim = coreRadius;
                     } else {
                         const safeTier = tier === -1 ? 0 : tier;
                         const boundaryTier = Math.min(safeTier + 2, 6);
-                        // Use the diffused extension function
                         targetDim = coreRadius + getMagicalExtension(boundaryTier);
                     }
                 }
@@ -170,7 +240,11 @@ export async function performWorldSweep(isEnabled) {
                         targetBright = generatedRadii.bright;
                         targetDim = generatedRadii.dim;
                     } else if (isMagical) {
-                        const coreRadius = rmuFlags.magicalRadius ?? Math.max(token?.light?.dim ?? 0, token?.light?.bright ?? 0);
+                        let coreRadius = rmuFlags.magicalRadius;
+                        if (coreRadius === undefined) {
+                            coreRadius = Math.max(token?.light?.dim ?? 0, token?.light?.bright ?? 0);
+                        }
+
                         targetBright = coreRadius;
                         flagsUpdate.magicalRadius = coreRadius;
 

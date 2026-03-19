@@ -12,6 +12,7 @@ import { getActorVisionCapabilities } from "./vision-parser.js";
 function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
     let effectiveDistance = distance;
     let effectiveBase = parseInt(baseTier, 10);
+    const thresholds = [10, 30, 100, 300, 1000, 3000];
 
     if (isMagical) {
         if (distance <= maxRadius) return effectiveBase;
@@ -22,8 +23,8 @@ function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
         effectiveBase = Math.min(baseTier + 2, 6);
         effectiveDistance = Math.max(0, distance - maxRadius);
 
-        // The shifted threshold array simulating the steep diffused drop-off
-        const magicalThresholds = [30, 100, 300, 1000, 3000];
+        // Shift the array for diffused magical light
+        const magicalThresholds = thresholds.slice(1);
         let stepsDegraded = 0;
 
         for (const threshold of magicalThresholds) {
@@ -34,10 +35,7 @@ function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
         return Math.min(effectiveBase + stepsDegraded, 6);
     }
 
-    // Standard Natural Light
-    const thresholds = [10, 30, 100, 300, 1000, 3000];
     let stepsDegraded = 0;
-
     for (const threshold of thresholds) {
         if (effectiveDistance > threshold) stepsDegraded++;
         else break;
@@ -103,7 +101,12 @@ function getBestIlluminationTier(targetPoint) {
 
         const path = canvas.grid.measurePath([targetPoint, lightCenter]);
         const distance = path.distance;
-        const maxRadius = Math.max(lightDoc.config?.dim || 0, lightDoc.config?.bright || 0, lightDoc.light?.dim || 0, lightDoc.light?.bright || 0);
+
+        // Read the true core radius directly from the module flag if it exists
+        let maxRadius = rmuFlags.magicalRadius;
+        if (maxRadius === undefined) {
+            maxRadius = Math.max(lightDoc.config?.dim || 0, lightDoc.config?.bright || 0, lightDoc.light?.dim || 0, lightDoc.light?.bright || 0);
+        }
 
         if (!isMagical && distance > maxRadius) continue;
 
@@ -220,7 +223,7 @@ export function determineLightingState(sourceDoc, target) {
             effectiveDarkvision = true;
             activeSpecialVision = "demonSight";
         } else {
-            effectiveNightvision = true; // Demon sight acts as nightvision beyond 100'
+            effectiveNightvision = true;
             activeSpecialVision = "demonSight";
         }
     } else if (hasThermal && distanceToTarget <= (nativeVision.thermalRange || 50)) {
