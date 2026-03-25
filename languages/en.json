@@ -36,6 +36,7 @@
     "rmu.migration.welcome.yes": "Apply RMU Rules Now",
     "rmu.migration.welcome.no": "Not Right Now",
 
+    "rmu.vision.lesserNightvisionActive": "Lesser Nightvision Active",
     "rmu.vision.nightvision": "Nightvision",
     "rmu.vision.darkvision": "Darkvision",
     "rmu.vision.thermal": "Thermal Vision",

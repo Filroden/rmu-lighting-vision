@@ -26,6 +26,8 @@ export async function outputLightingToChat(sourceDoc, targetName, state) {
         activeVision = game.i18n.localize("rmu.vision.darkvisionActive");
     } else if (state.hasNightvision) {
         activeVision = game.i18n.localize("rmu.vision.nightvisionActive");
+    } else if (state.hasLesserNightvision) {
+        activeVision = game.i18n.localize("rmu.vision.lesserNightvisionActive");
     }
 
     // Construct the data payload for the Handlebars template

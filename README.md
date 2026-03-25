@@ -1,6 +1,6 @@
 # RMU Lighting and Vision
 
-![Latest Version](https://img.shields.io/badge/Version-1.0.0-beta3-blue)
+![Latest Version](https://img.shields.io/badge/Version-1.0.0-beta4-blue)
 ![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v13-orange)
 ![System](https://img.shields.io/badge/System-RMU-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
@@ -26,11 +26,13 @@ The **RMU Lighting and Vision** module implements the rules for visibility in Co
 
 These talents completely alter how the player sees the VTT canvas, melting away shadows and applying custom WebGL colour tints.
 
-- **Default:** Shows lights which are Bright, Uneven, Dim at "bright" levels and Shadowy, Dark at "Dim" levels.
+- **Default (Basic Vision):** Shows lights which are RMU Bright, Uneven, Dim levels at Foundry "bright" levels and RMU Shadowy and Dark levels at Foundry "Dim" levels.
 - **Darkvision:** Pierces complete darkness up to 10' per Tier. Shows Bright, Uneven, Dim, Shadowy and Dark in full colour at "bright" levels.
 - **Nightvision:** Reduces darkness penalties by 40. Shows Bright, Uneven, Dim, Shadowy and Dark in full colour at "bright" levels.
 - **Thermal Vision:** Pierces complete darkness up to 50'. Grants *See Invisibility* up to 50'. Renders the canvas in a high-contrast **Orange/Yellow** heat-map.
 - **Sight, Demon:** Grants Darkvision up to 100', and Nightvision beyond 100'. Natively includes Thermal Vision (50'). Grants *See Invisibility* up to 5' per Level. Renders the canvas in a high-contrast **Crimson** tint.
+
+Note: The **Lesser Nightvsion** talent is recognised by the module and its penalty reduction of 20 is applied and shown in the chat card/API output. However, it shares the same vision mode as Basic Vision.
 
 ### 2. Detection Senses (Token Outlines)
 

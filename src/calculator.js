@@ -96,11 +96,17 @@ function getBestIlluminationTier(targetPoint) {
             lightCenter = { x: lightDoc.x, y: lightDoc.y };
         }
 
+        // True radial distance to perfectly match visual circles, bypassing grid octagons
+        const pixelDistance = Math.hypot(targetPoint.x - lightCenter.x, targetPoint.y - lightCenter.y);
+        const gridDistance = canvas.scene?.grid?.distance ?? 5;
+        const distance = (pixelDistance / canvas.grid.size) * gridDistance;
+
+        // RMU Optimization: Skip calculating lights mathematically beyond their absolute maximum range
+        if (distance > 3000) continue;
+
+        // Wall collision test (Moved after distance to save CPU overhead)
         const blocksLight = CONFIG.Canvas.polygonBackends.light.testCollision(targetPoint, lightCenter, { type: "light", mode: "any" });
         if (blocksLight) continue;
-
-        const path = canvas.grid.measurePath([targetPoint, lightCenter]);
-        const distance = path.distance;
 
         // Read the true core radius directly from the module flag if it exists
         let maxRadius = rmuFlags.magicalRadius;
@@ -108,24 +114,31 @@ function getBestIlluminationTier(targetPoint) {
             maxRadius = Math.max(lightDoc.config?.dim || 0, lightDoc.config?.bright || 0, lightDoc.light?.dim || 0, lightDoc.light?.bright || 0);
         }
 
-        if (!isMagical && distance > maxRadius) continue;
-
-        // Categorize Darkness Sources
+        // FIX 1: Darkness must be strictly bounded by its physical radius
         if (isDarknessSource) {
-            if (isUtter) inUtterdark = true;
-            else inMagicalDarkness = true;
+            if (distance <= maxRadius) {
+                if (isUtter) inUtterdark = true;
+                else inMagicalDarkness = true;
+            }
             continue;
         }
 
         const calculatedTier = getDegradedTier(distance, baseIllumination, isMagical, maxRadius);
 
-        // Categorize Light Sources
+        // FIX 2: Only prioritize Magical/Utter light if it actually reaches the target point.
+        // A light that has degraded to Pitch Black (6) should not suppress local mundane lights.
         if (isUtter) {
-            if (bestUtterlightTier === null || calculatedTier < bestUtterlightTier) bestUtterlightTier = calculatedTier;
+            if (calculatedTier < 6 && (bestUtterlightTier === null || calculatedTier < bestUtterlightTier)) {
+                bestUtterlightTier = calculatedTier;
+            }
         } else if (isMagical) {
-            if (bestMagicalTier === null || calculatedTier < bestMagicalTier) bestMagicalTier = calculatedTier;
+            if (calculatedTier < 6 && (bestMagicalTier === null || calculatedTier < bestMagicalTier)) {
+                bestMagicalTier = calculatedTier;
+            }
         } else {
-            if (calculatedTier < bestMundaneTier) bestMundaneTier = calculatedTier;
+            if (calculatedTier < bestMundaneTier) {
+                bestMundaneTier = calculatedTier;
+            }
         }
     }
 
@@ -152,11 +165,12 @@ function getBestIlluminationTier(targetPoint) {
 /**
  * Calculates the exact numerical penalties based on tier and active vision modes.
  * @param {number} tier - The environmental light tier (0-6).
+ * * @param {boolean} hasLesserNightvision - Whether the observer is using Lesser Nightvision.
  * @param {boolean} hasNightvision - Whether the observer is using Nightvision.
  * @param {boolean} hasDarkvision - Whether the observer is using Darkvision.
  * @returns {Object} An object containing { penaltyFull, penaltyHalf }.
  */
-function calculatePenalties(tier, hasNightvision, hasDarkvision) {
+function calculatePenalties(tier, hasLesserNightvision, hasNightvision, hasDarkvision) {
     // Base RMU penalties mapped directly to the tier integers
     const basePenalties = {
         [RMU_LIGHT_LEVELS.BRIGHT]: 0,
@@ -175,9 +189,11 @@ function calculatePenalties(tier, hasNightvision, hasDarkvision) {
         return { penaltyFull: 0, penaltyHalf: 0 };
     }
 
-    // Nightvision offsets penalties by +40, but provides no benefit in Pitch Black/Utterdark[cite: 31, 32].
+    // Apply the standard or lesser Nighvision offset, ignoring Pitch Black
     if (hasNightvision && tier !== RMU_LIGHT_LEVELS.PITCH_BLACK) {
-        penalty = Math.min(0, penalty + 40); // Penalty cannot become a positive bonus
+        penalty = Math.min(0, penalty + 40);
+    } else if (hasLesserNightvision && tier !== RMU_LIGHT_LEVELS.PITCH_BLACK) {
+        penalty = Math.min(0, penalty + 20); // Lesser Nightvision offset
     }
 
     return {
@@ -195,9 +211,20 @@ export function determineLightingState(sourceDoc, target) {
     const sourceCenter = sourceDoc.object ? sourceDoc.object.center : { x: sourceDoc.x, y: sourceDoc.y };
     const targetPoint = target.object ? target.object.center : target.x !== undefined ? target : { x: target.x, y: target.y };
 
-    const blocksSight = CONFIG.Canvas.polygonBackends.sight.testCollision(sourceCenter, targetPoint, { type: "sight", mode: "any" });
-    const path = canvas.grid.measurePath([sourceCenter, targetPoint]);
-    const distanceToTarget = path.distance;
+    let blocksSight = false;
+
+    if (sourceDoc.object?.vision?.los) {
+        blocksSight = !sourceDoc.object.vision.los.contains(targetPoint.x, targetPoint.y);
+    } else {
+        blocksSight = CONFIG.Canvas.polygonBackends.sight.testCollision(sourceCenter, targetPoint, {
+            type: "sight",
+            mode: "any",
+        });
+    }
+
+    const pixelDistance = Math.hypot(targetPoint.x - sourceCenter.x, targetPoint.y - sourceCenter.y);
+    const gridDistance = canvas.scene?.grid?.distance ?? 5;
+    const distanceToTarget = (pixelDistance / canvas.grid.size) * gridDistance;
 
     if (blocksSight) {
         return { hasLineOfSight: false, distance: distanceToTarget };
@@ -208,6 +235,7 @@ export function determineLightingState(sourceDoc, target) {
     const nativeVision = getActorVisionCapabilities(sourceDoc.actor);
 
     // Extract all potential vision states
+    const hasLesserNightvision = nativeVision.hasLesserNightvision;
     const hasNightvision = visionMode === "nightvision" || nativeVision.hasNativeNightvision;
     const hasDarkvision = visionMode === "darkvision" || nativeVision.hasNativeDarkvision;
     const hasThermal = visionMode === "rmuThermal" || nativeVision.hasThermalVision;
@@ -234,10 +262,11 @@ export function determineLightingState(sourceDoc, target) {
     }
 
     const tier = getBestIlluminationTier(targetPoint);
-    const { penaltyFull, penaltyHalf } = calculatePenalties(tier, effectiveNightvision, effectiveDarkvision);
+    const { penaltyFull, penaltyHalf } = calculatePenalties(tier, hasLesserNightvision, effectiveNightvision, effectiveDarkvision);
 
     return {
         tier,
+        hasLesserNightvision,
         hasNightvision: effectiveNightvision,
         hasDarkvision: effectiveDarkvision,
         activeSpecialVision, // Passes the specific mode to the chat parser
