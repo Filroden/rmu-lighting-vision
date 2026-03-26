@@ -19,6 +19,7 @@ The **RMU Lighting and Vision** module implements the rules for visibility in Co
 - **Native Talent Parsing:** Automatically reads the RMU Actor document upon token creation to determine if a character possesses advanced vision talents or detection senses, applying the correct Foundry settings instantly.
 - **Magical Light Configuration:** Allows GMs to flag light sources as magical, with a global setting to determine whether magical light degrades over distance or illuminates only within its full radius equally.
 - **Instant Chat Output:** Press `Shift + L` while targeting a token or hovering the mouse on the canvas to immediately print a formatted chat card displaying both the "Sight Required" and "Sight Helpful" penalties for that position, accounting for all active vision modes.
+- **Diagnostic GM Heatmap:** Press `Alt + L` (GM only) to display a greyscale heatmap. This reveals the mathematical boundaries of RMU illumination tiers, magical light & darkness, and Utterlight/Utterdark, with an on-screen HUD legend.
 
 ## Supported Vision & Detection Talents (Beta Configuration)
 
@@ -29,10 +30,11 @@ These talents completely alter how the player sees the VTT canvas, melting away 
 - **Default (Basic Vision):** Shows lights which are RMU Bright, Uneven, Dim levels at Foundry "bright" levels and RMU Shadowy and Dark levels at Foundry "Dim" levels.
 - **Darkvision:** Pierces complete darkness up to 10' per Tier. Shows Bright, Uneven, Dim, Shadowy and Dark in full colour at "bright" levels.
 - **Nightvision:** Reduces darkness penalties by 40. Shows Bright, Uneven, Dim, Shadowy and Dark in full colour at "bright" levels.
+
 - **Thermal Vision:** Pierces complete darkness up to 50'. Grants *See Invisibility* up to 50'. Renders the canvas in a high-contrast **Orange/Yellow** heat-map.
 - **Sight, Demon:** Grants Darkvision up to 100', and Nightvision beyond 100'. Natively includes Thermal Vision (50'). Grants *See Invisibility* up to 5' per Level. Renders the canvas in a high-contrast **Crimson** tint.
 
-Note: The **Lesser Nightvsion** talent is recognised by the module and its penalty reduction of 20 is applied and shown in the chat card/API output. However, it shares the same vision mode as Basic Vision.
+*Note: The **Lesser Nightvision** talent is recognised by the module and its penalty reduction of 20 is applied and shown in the chat card/API output. However, it shares the same vision mode as Basic Vision.*
 
 ### 2. Detection Senses (Token Outlines)
 
@@ -53,6 +55,7 @@ These talents do not colour the canvas, but act as a radar. They pierce physical
 2. **Set Base Illumination:** Select the light level present within the first 10 feet of the source (e.g., a Torch is *Dim Light*). The module will automatically degrade the light mathematically. Set the option if the source is magical. Depending on your game setting, this will make the magic light either act like a spotlight with no light spilling beyond the radius, or it will act like natural light but suffer 2 steps of light degradation at the first boundary before degrading normally.
 3. **Automated Tokens:** Simply drag an Actor with recognised vision talents onto the canvas. The module will automatically configure their Vision Modes and Detection Ranges.
 4. **Calculate Penalties:** Select your token, target an enemy token, and press `Shift + L` to output the exact environmental modifiers to the chat.
+5. **Analyse the Canvas (GM Only):** Press `Alt + L` to toggle the diagnostic heatmap. This shows the mathematical boundaries of your light sources directly onto the map as a click-through layer, complete with a HUD legend to easily verify how lights overlaps.
 
 ## Lighting & Vision Configuration Panel
 

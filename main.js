@@ -4,6 +4,7 @@ import { determineLightingState } from "./src/calculator.js";
 import { outputLightingToChat } from "./src/chat.js";
 import { registerVisionSourceOverride } from "./src/rmu-vision-source.js";
 import { performWorldSweep } from "./src/migration.js";
+import { initHeatmapListener } from "./src/heatmap.js";
 import "./src/ui.js";
 import "./src/light-sync.js";
 import "./src/vision-sync.js";
@@ -96,6 +97,8 @@ Hooks.once("init", async () => {
 
 Hooks.once("ready", async () => {
     if (!game.user.isGM) return;
+
+    initHeatmapListener();
 
     const firstBootAddressed = game.settings.get("rmu-lighting-vision", "firstBootAddressed");
 

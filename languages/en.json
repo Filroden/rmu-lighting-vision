@@ -79,5 +79,9 @@
     "rmu.light.tiers.pitchBlack": "Pitch Black / Utterdark",
 
     "rmu.detection.lifeSense": "Life Sense",
-    "rmu.detection.presenceSense": "Presence Sense"
+    "rmu.detection.presenceSense": "Presence Sense",
+
+    "rmu.lighting.heatmap.disabled": "RMU Lighting: Heatmap Disabled.",
+    "rmu.lighting.heatmap.generating": "RMU Lighting: Generating Heatmap... Please wait.",
+    "rmu.lighting.heatmap.complete": "RMU Lighting: Heatmap Complete."
 }
