@@ -36,6 +36,7 @@
     "rmu.migration.welcome.yes": "Apply RMU Rules Now",
     "rmu.migration.welcome.no": "Not Right Now",
 
+    "rmu.vision.lesserNightvisionActive": "Lesser Nightvision Active",
     "rmu.vision.nightvision": "Nightvision",
     "rmu.vision.darkvision": "Darkvision",
     "rmu.vision.thermal": "Thermal Vision",
@@ -78,5 +79,9 @@
     "rmu.light.tiers.pitchBlack": "Pitch Black / Utterdark",
 
     "rmu.detection.lifeSense": "Life Sense",
-    "rmu.detection.presenceSense": "Presence Sense"
+    "rmu.detection.presenceSense": "Presence Sense",
+
+    "rmu.lighting.heatmap.disabled": "RMU Lighting: Heatmap Disabled.",
+    "rmu.lighting.heatmap.generating": "RMU Lighting: Generating Heatmap... Please wait.",
+    "rmu.lighting.heatmap.complete": "RMU Lighting: Heatmap Complete."
 }

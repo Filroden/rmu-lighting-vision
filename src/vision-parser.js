@@ -5,6 +5,7 @@
  */
 export function getActorVisionCapabilities(actor) {
     const capabilities = {
+        hasLesserNightvision: false,
         hasNativeNightvision: false,
         hasNativeDarkvision: false,
         darkvisionRange: 0,
@@ -25,6 +26,9 @@ export function getActorVisionCapabilities(actor) {
         const tier = talent.system?.tier || 1;
 
         switch (talentName) {
+            case "Lesser Nightvision":
+                capabilities.hasLesserNightvision = true;
+                break;
             case "Nightvision":
                 capabilities.hasNativeNightvision = true;
                 break;
