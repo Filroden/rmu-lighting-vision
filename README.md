@@ -36,6 +36,20 @@ These talents completely alter how the player sees the VTT canvas, melting away 
 
 *Note: The **Lesser Nightvision** talent is recognised by the module and its penalty reduction of 20 is applied and shown in the chat card/API output. However, it shares the same vision mode as Basic Vision.*
 
+#### Examples of what the GM or players see
+
+- GM view with no token selected
+  ![GM view with no token selected](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/gm_view.png)
+
+- Token view with Basic vision (or Lesser Nightvision)
+  ![Token view Basic Vision](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/basic_vision_view.png)
+
+- Token view with Nightvision
+  ![Token view Nightvision](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/nightvision_view.png)
+
+- Token view with Darkvision (but no Nightvision)
+  ![Token view Darkvision](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/darkvision_view.png)
+
 ### 2. Detection Senses (Token Outlines)
 
 These talents do not colour the canvas, but act as a radar. They pierce physical walls and pitch-black darkness to reveal hidden tokens using coloured outlines.
@@ -55,7 +69,12 @@ These talents do not colour the canvas, but act as a radar. They pierce physical
 2. **Set Base Illumination:** Select the light level present within the first 10 feet of the source (e.g., a Torch is *Dim Light*). The module will automatically degrade the light mathematically. Set the option if the source is magical. Depending on your game setting, this will make the magic light either act like a spotlight with no light spilling beyond the radius, or it will act like natural light but suffer 2 steps of light degradation at the first boundary before degrading normally.
 3. **Automated Tokens:** Simply drag an Actor with recognised vision talents onto the canvas. The module will automatically configure their Vision Modes and Detection Ranges.
 4. **Calculate Penalties:** Select your token, target an enemy token, and press `Shift + L` to output the exact environmental modifiers to the chat.
+
+   ![Chat Card output](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/chart-card.png)
+
 5. **Analyse the Canvas (GM Only):** Press `Alt + L` to toggle the diagnostic heatmap. This shows the mathematical boundaries of your light sources directly onto the map as a click-through layer, complete with a HUD legend to easily verify how lights overlaps.
+
+   ![Diagnostic Heatmap example](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/heatmap.png)
 
 ## Lighting & Vision Configuration Panel
 
@@ -69,9 +88,13 @@ The panel is divided into three tabs:
 
 Define how each of the 7 RMU mechanical tiers is physically painted onto the canvas. This controls the raw environmental lighting (Bright, Dim, or Unlit) before any token vision modes are applied.
 
+![Canvas Render settings](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/canvas_render.png)
+
 ### Tab 2: Vision Modes (Perceived Light)
 
 Define how specific token vision modes perceive the raw canvas lighting. For example, you can configure the engine so that areas rendered as "Dim" on the canvas are perceived as "Unlit" by Basic Vision tokens, but perceived as "Bright" by tokens possessing Nightvision.
+
+![Vision Mode settings](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/vision_modes.png)
 
 ### Tab 3: System & Migration
 
