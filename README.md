@@ -13,62 +13,70 @@
 
 The **RMU Lighting and Vision** module implements the rules for visibility in Core Law and automates many vision talents.
 
+## Setting Expectations: Visual Compromises
+
+It is important to understand that this module has to make visual compromises to represent RMU's complex physics within Foundry VTT's rendering engine. If the visual lighting on the canvas doesn't perfectly match the mental picture you have of a scene, it is likely due to one of these two hard engine limitations:
+
+* **The 7 vs. 3 Light Level Problem:** Rolemaster Unified relies on a strict 7-tier lighting system (from Bright down to Pitch Black). Foundry's WebGL canvas, however, natively supports only 3 visual states: Bright, Dim, and Unlit. Because it is physically impossible to squeeze 7 distinct visual bands into 3, the module is forced to group them. While GMs can customise how these tiers are grouped in the settings, the canvas will never display a perfect 7-step gradient.
+* **The "All or Nothing" Darkness Override:** Foundry's native darkness sources act as impenetrable walls of shadow. To allow talents like Darkvision or Thermal Vision to work at all, the module employs a geometry override that forces these vision modes to ignore darkness polygons. However, this workaround is "all or nothing". It cannot *partially* penetrate shadows; once a token's vision breaches the darkness boundary, the entire area is pierced for that specific token.
+
+**The Golden Rule:** Regardless of how the lighting is visually rendered on the map, the underlying mathematical engine and the `Shift + L` calculator will **always** use the true 7-tier RMU rules and distances. Trust the calculator. GMs can also use the 'Alt + L' diagnostic heatmap to verify how the 7 light tiers are mapped on the scene.
+
 ## Features
 
-- **True RMU Light Degradation:** Calculates the exact light tier (Bright, Uneven, Dim, Shadowy, Dark, Extremely Dark, Pitch Black) based on the distance from the light source (10', 30', 100', 300', 1000' and 3000' thresholds).
-- **Native Talent Parsing:** Automatically reads the RMU Actor document upon token creation to determine if a character possesses advanced vision talents or detection senses, applying the correct Foundry settings instantly.
-- **Magical Light Configuration:** Allows GMs to flag light sources as magical, with a global setting to determine whether magical light degrades over distance or illuminates only within its full radius equally.
-- **Instant Chat Output:** Press `Shift + L` while targeting a token or hovering the mouse on the canvas to immediately print a formatted chat card displaying both the "Sight Required" and "Sight Helpful" penalties for that position, accounting for all active vision modes.
-- **Diagnostic GM Heatmap:** Press `Alt + L` (GM only) to display a greyscale heatmap. This reveals the mathematical boundaries of RMU illumination tiers, magical light & darkness, and Utterlight/Utterdark, with an on-screen HUD legend.
+* **True RMU Light Degradation:** Calculates the exact light tier (Bright, Uneven, Dim, Shadowy, Dark, Extremely Dark, Pitch Black) based on the distance from the light source (10', 30', 100', 300', 1000' and 3000' thresholds).
+* **Native Talent Parsing:** Automatically reads the RMU Actor document upon token creation to determine if a character possesses advanced vision talents or detection senses, applying the correct Foundry settings instantly.
+* **Magical Light Configuration:** Allows GMs to flag light sources as magical, with a global setting to determine whether magical light degrades over distance or illuminates only within its full radius equally.
+* **Instant Chat Output:** Press `Shift + L` while targeting a token or hovering the mouse on the canvas to immediately print a formatted chat card displaying both the "Sight Required" and "Sight Helpful" penalties for that position, accounting for all active vision modes.
+* **Diagnostic GM Heatmap:** Press `Alt + L` (GM only) to display a greyscale heatmap. This reveals the mathematical boundaries of RMU illumination tiers, magical light & darkness, and Utterlight/Utterdark, with an on-screen HUD legend.
 
 ## Supported Vision & Detection Talents (Beta Configuration)
 
 ### 1. Stylised Vision Modes (Canvas Shaders)
 
-These talents completely alter how the player sees the VTT canvas, melting away shadows and applying custom WebGL colour tints.
+These talents completely alter how the player sees the VTT canvas, seeing through shadows and applying custom colour tints.
 
-- **Default (Basic Vision):** Shows lights which are RMU Bright, Uneven, Dim levels at Foundry "bright" levels and RMU Shadowy and Dark levels at Foundry "Dim" levels.
-- **Darkvision:** Pierces complete darkness up to 10' per Tier. Shows Bright, Uneven, Dim, Shadowy and Dark in full colour at "bright" levels.
-- **Nightvision:** Reduces darkness penalties by 40. Shows Bright, Uneven, Dim, Shadowy and Dark in full colour at "bright" levels.
-
-- **Thermal Vision:** Pierces complete darkness up to 50'. Grants *See Invisibility* up to 50'. Renders the canvas in a high-contrast **Orange/Yellow** heat-map.
-- **Sight, Demon:** Grants Darkvision up to 100', and Nightvision beyond 100'. Natively includes Thermal Vision (50'). Grants *See Invisibility* up to 5' per Level. Renders the canvas in a high-contrast **Crimson** tint.
+* **Default (Basic Vision):** Shows lights which are RMU Bright, Uneven, Dim levels at Foundry "bright" levels and RMU Shadowy and Dark levels at Foundry "Dim" levels.
+* **Darkvision:** Pierces complete darkness up to 10' per Tier. Shows Bright, Uneven, Dim, Shadowy and Dark in full colour at "bright" levels.
+* **Nightvision:** Reduces darkness penalties by 40. Shows Bright, Uneven, Dim, Shadowy and Dark in full colour at "bright" levels.
+* **Thermal Vision:** Pierces complete darkness up to 50'. Grants *See Invisibility* up to 50'. Renders the canvas in a **Orange/Yellow** heat-map.
+* **Sight, Demon:** Grants Darkvision up to 100', and Nightvision beyond 100'. Natively includes Thermal Vision (50'). Grants *See Invisibility* up to 5' per Level. Renders the canvas in a **Crimson** tint.
 
 *Note: The **Lesser Nightvision** talent is recognised by the module and its penalty reduction of 20 is applied and shown in the chat card/API output. However, it shares the same vision mode as Basic Vision.*
 
 #### Examples of what the GM or players see
 
-- GM view with no token selected
+* GM view with no token selected
   ![GM view with no token selected](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/gm_view.png)
 
-- Token view with Basic vision (or Lesser Nightvision)
+* Token view with Basic vision (or Lesser Nightvision)
   ![Token view Basic Vision](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/basic_vision_view.png)
 
-- Token view with Nightvision
+* Token view with Nightvision
   ![Token view Nightvision](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/nightvision_view.png)
 
-- Token view with Darkvision (but no Nightvision)
+* Token view with Darkvision (but no Nightvision)
   ![Token view Darkvision](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/darkvision_view.png)
 
 ### 2. Detection Senses (Token Outlines)
 
 These talents do not colour the canvas, but act as a radar. They pierce physical walls and pitch-black darkness to reveal hidden tokens using coloured outlines.
 
-- **Life Sense (Cyan Outline):** Range of 5' per Tier.
-  - *Exclusion Rule:* Completely ignores any token that possesses a talent named **"Lifeless"**.
-- **Presence Sense (Red Outline):** Range of 5' per Level.
-  - *Exclusion Rule:* Completely ignores any token that possesses a talent named **"Animalistic"** or **"Mindless"**.
-- **Tremorsense:** Flat 50' range. Uses native Foundry *Tremorsense* mechanics.
-- **Invisibility Sense:** Range of 5' per Level. Reveals invisible tokens.
-- **Air Movement Detection:** Range of 1' per Tier. Mapped mechanically to native Foundry *See Invisibility*.
-- **Electrolocation, Passive:** Range of 1' per Level. Mapped mechanically to native Foundry *See Invisibility*.
+* **Life Sense (Cyan Outline):** Range of 5' per Tier.
+  * *Exclusion Rule:* Completely ignores any token that possesses a talent named **"Lifeless"**.
+* **Presence Sense (Red Outline):** Range of 5' per Level.
+  * *Exclusion Rule:* Completely ignores any token that possesses a talent named **"Animalistic"** or **"Mindless"**.
+* **Tremorsense:** Flat 50' range. Uses native Foundry *Tremorsense* mechanics.
+* **Invisibility Sense:** Range of 5' per Level. Reveals invisible tokens.
+* **Air Movement Detection:** Range of 1' per Tier. Mapped mechanically to native Foundry *See Invisibility*.
+* **Electrolocation, Passive:** Range of 1' per Level. Mapped mechanically to native Foundry *See Invisibility*.
 
 ## How to Use
 
 1. **Configure Light Sources:** Open the configuration sheet for any Ambient Light or Token emitting light. Find the new **RMU Lighting Settings** section.
 2. **Set Base Illumination:** Select the light level present within the first 10 feet of the source (e.g., a Torch is *Dim Light*). The module will automatically degrade the light mathematically. Set the option if the source is magical. Depending on your game setting, this will make the magic light either act like a spotlight with no light spilling beyond the radius, or it will act like natural light but suffer 2 steps of light degradation at the first boundary before degrading normally.
 3. **Automated Tokens:** Simply drag an Actor with recognised vision talents onto the canvas. The module will automatically configure their Vision Modes and Detection Ranges.
-4. **Calculate Penalties:** Select your token, target an enemy token, and press `Shift + L` to output the exact environmental modifiers to the chat.
+4. **Calculate Penalties:** Select your token, target an enemy token or point to a location on the canvas, and press `Shift + L` to output the exact environmental modifiers to the chat.
 
    ![Chat Card output](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/chart-card.png)
 
@@ -117,8 +125,8 @@ If you import a new map from a compendium, simply open the **Lighting & Vision C
 **3. Configuring Existing Light Sources (Manual Step)**
 Unlike vision, the engine cannot automatically guess the narrative intent behind your pre-existing light sources (e.g., whether a placed light was meant to be a torch, a glowing mushroom, or a magical aura).
 
-- By default, the engine will treat all pre-existing Ambient Lights and Token Lights as **Bright Light** (Tier 0).
-- To fix this, you must double-click your existing Ambient Lights (or tokens holding lights) and manually select the correct **RMU Base Illumination** tier from the dropdown menu in their configuration sheets.
+* By default, the engine will treat all pre-existing Ambient Lights and Token Lights as **Bright Light** (Tier 0).
+* To fix this, you must double-click your existing Ambient Lights (or tokens holding lights) and manually select the correct **RMU Base Illumination** tier from the dropdown menu in their configuration sheets.
 
 **4. Uninstalling or Disabling**
 If you wish to stop using the module, open the **System & Migration** tab and click **Restore Foundry Defaults**. This will strip the custom RMU shaders from your tokens and restore your light radii exactly to where they were before the module was applied.
@@ -127,7 +135,7 @@ If you wish to stop using the module, open the **System & Migration** tab and cl
 
 The following features are currently in development for full release:
 
-- **Active Effects Integration:** Support for spells and potions temporarily granting vision talents.
+* **Active Effects Integration:** Support for spells and potions temporarily granting vision talents.
 
 ## API for System Developers
 
@@ -148,6 +156,7 @@ if (lightingModule?.active && lightingModule.api) {
 ```json
 {
   "tier": 4,
+  "hasLesserNightvision": false,
   "hasNightvision": false,
   "hasDarkvision": true,
   "activeSpecialVision": "thermal",

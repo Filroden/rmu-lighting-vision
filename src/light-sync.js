@@ -9,7 +9,7 @@
  * ============================================================================
  */
 
-import { getRadiiForTier, getLightMapping, getMagicalExtension } from "./visual-mapping.js";
+import { calculateLightRenderingData } from "./visual-mapping.js";
 
 /**
  * The core mutation function that enforces RMU lighting mathematics.
@@ -75,96 +75,40 @@ function syncLightRadii(document, updateData) {
         };
     }
 
-    let targetBright = 0;
-    let targetDim = 0;
-    let targetPriority = 0;
+    let coreRadius = 0;
 
-    // --- WEBGL RENDERING PRIORITY ---
-    // By default, Foundry draws light sources based on elevation or creation order.
-    // To enforce the RMU absolute hierarchy, we manipulate the WebGL z-index priority.
-    // Utterdark (15) > Magical Darkness (5) | Utterlight (20) > Magical Light (10) > Mundane (0).
     if (isMagical) {
-        if (isDarknessSource) targetPriority = isUtter ? 15 : 5;
-        else targetPriority = isUtter ? 20 : 10;
-    }
-
-    // --- RADII CALCULATION ---
-    if (!isMagical && tier !== -1) {
-        // Mundane light strictly follows the predefined physical distances from Table 15-7.
-        const generatedRadii = getRadiiForTier(tier);
-        targetBright = generatedRadii.bright;
-        targetDim = generatedRadii.dim;
-    } else if (isMagical) {
         // --- IMMUTABLE MAGICAL RADIUS LOGIC ---
-        // Magical light scales dynamically. To prevent the module from constantly overwriting
-        // the radius every time the token moves, we must identify if the incoming radius change
-        // was triggered by a human typing a number, or by our own automated system sweep.
         const dimChanged = updatedLight?.dim !== undefined && updatedLight.dim !== currentLight?.dim;
         const brightChanged = updatedLight?.bright !== undefined && updatedLight.bright !== currentLight?.bright;
         const userChangedRadius = !isSweep && (dimChanged || brightChanged);
 
-        let coreRadius;
         if (userChangedRadius) {
-            // The human GM actively typed a new radius in the configuration sheet.
-            // We adopt this as the new immutable core radius for the magical light.
             coreRadius = Math.max(updatedLight?.dim ?? currentLight?.dim ?? 0, updatedLight?.bright ?? currentLight?.bright ?? 0);
-            updateData.flags = updateData.flags || {};
-            updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
-            updateData.flags["rmu-lighting-vision"].magicalRadius = coreRadius;
         } else {
-            // It is an automated update; read the saved core radius from the database.
             coreRadius = currentFlags.magicalRadius ?? Math.max(currentLight?.dim ?? 0, currentLight?.bright ?? 0);
-
-            // Safety catch for pre-existing lights being converted to magical for the first time.
-            if (currentFlags.magicalRadius === undefined) {
-                updateData.flags = updateData.flags || {};
-                updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
-                updateData.flags["rmu-lighting-vision"].magicalRadius = coreRadius;
-            }
         }
 
-        targetBright = coreRadius;
-
-        // Determine if magical light spills beyond its core radius (based on GM settings).
-        if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
-            targetDim = coreRadius;
-        } else {
-            // Step the light down 2 tiers at the boundary, and calculate how far it extends.
-            const safeTier = tier === -1 ? 0 : tier;
-            const boundaryTier = Math.min(safeTier + 2, 6);
-            const dimExtension = getMagicalExtension(boundaryTier);
-            targetDim = coreRadius + dimExtension;
-        }
+        updateData.flags = updateData.flags || {};
+        updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
+        updateData.flags["rmu-lighting-vision"].magicalRadius = coreRadius;
     }
 
-    // --- THE VISUAL MAPPING CRUSHER ---
-    // Before finalising, we pass the calculated radii through the GM's custom Tab 1 visual mappings.
-    // If the GM configured "Shadowy" light to render as completely Unlit, we crush the bright/dim values to 0 here.
-    if (!isDarknessSource && tier !== -1) {
-        const mapping = getLightMapping();
-        const radiusCategory = mapping[tier];
-
-        if (radiusCategory === "dim") {
-            targetDim = Math.max(targetBright, targetDim);
-            targetBright = 0; // Crush bright light down to dim
-        } else if (radiusCategory === "off") {
-            targetBright = 0; // Completely extinguish visual light
-            targetDim = 0;
-        }
-    }
+    // --- THE UNIFIED CALCULATION ENGINE ---
+    const renderData = calculateLightRenderingData(tier, isMagical, isUtter, isDarknessSource, coreRadius);
 
     // --- INJECT THE MUTATION ---
     // Finally, forcefully apply the calculated values to the incoming data payload.
     if (isToken) {
         updateData.light = updateData.light || {};
-        updateData.light.bright = targetBright;
-        updateData.light.dim = Math.max(targetBright, targetDim);
-        updateData.light.priority = targetPriority;
+        updateData.light.bright = renderData.bright;
+        updateData.light.dim = renderData.dim;
+        updateData.light.priority = renderData.priority;
     } else {
         updateData.config = updateData.config || {};
-        updateData.config.bright = targetBright;
-        updateData.config.dim = Math.max(targetBright, targetDim);
-        updateData.config.priority = targetPriority;
+        updateData.config.bright = renderData.bright;
+        updateData.config.dim = renderData.dim;
+        updateData.config.priority = renderData.priority;
     }
 }
 

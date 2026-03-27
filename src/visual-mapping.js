@@ -114,3 +114,71 @@ export function getMagicalExtension(auraStartTier) {
 
     return maxExtension;
 }
+
+/**
+ * Centralised calculation engine that takes raw narrative flags and
+ * outputs the exact geometric radii and WebGL priorities for the canvas.
+ * This prevents DRY violations between real-time syncing and bulk migrations.
+ * * @param {number} tier - The RMU illumination tier (0-6, or -1 for unlit).
+ * @param {boolean} isMagical - Whether the source is magical.
+ * @param {boolean} isUtter - Whether the source is Utterlight/Utterdark.
+ * @param {boolean} isDarknessSource - Whether this source emits darkness.
+ * @param {number} coreRadius - The baseline radius for magical scaling (0 for mundane).
+ * @returns {Object} An object containing { bright, dim, priority }.
+ */
+export function calculateLightRenderingData(tier, isMagical, isUtter, isDarknessSource, coreRadius) {
+    let targetBright = 0;
+    let targetDim = 0;
+    let targetPriority = 0;
+
+    // 1. Determine WebGL Rendering Priority
+    // By default, Foundry draws light sources based on elevation or creation order.
+    // To enforce the RMU absolute hierarchy, we manipulate the WebGL z-index priority.
+    // Utterdark (15) > Magical Darkness (5) | Utterlight (20) > Magical Light (10) > Mundane (0).
+    if (isMagical) {
+        if (isDarknessSource) targetPriority = isUtter ? 15 : 5;
+        else targetPriority = isUtter ? 20 : 10;
+    }
+
+    // 2. Calculate Baseline Geometry
+    if (!isMagical && tier !== -1) {
+        // Mundane light strictly follows the predefined physical distances from Table 15-7.
+        const generatedRadii = getRadiiForTier(tier);
+        targetBright = generatedRadii.bright;
+        targetDim = generatedRadii.dim;
+    } else if (isMagical) {
+        targetBright = coreRadius;
+
+        // Determine if magical light spills beyond its core radius (based on GM settings).
+        if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
+            targetDim = coreRadius;
+        } else {
+            // Step the light down 2 tiers at the boundary, and calculate how far it extends.
+            const safeTier = tier === -1 ? 0 : tier;
+            const boundaryTier = Math.min(safeTier + 2, 6);
+            targetDim = coreRadius + getMagicalExtension(boundaryTier);
+        }
+    }
+
+    // 3. The Visual Mapping Crusher
+    // Before finalising, we pass the calculated radii through the GM's custom Tab 1 visual mappings.
+    // If the GM configured "Shadowy" light to render as completely Unlit, we crush the bright/dim values to 0 here.
+    if (!isDarknessSource && tier !== -1) {
+        const mapping = getLightMapping();
+        const radiusCategory = mapping[tier];
+
+        if (radiusCategory === "dim") {
+            targetDim = Math.max(targetBright, targetDim);
+            targetBright = 0; // Crush bright light down to dim
+        } else if (radiusCategory === "off") {
+            targetBright = 0; // Completely extinguish visual light
+            targetDim = 0;
+        }
+    }
+
+    return {
+        bright: targetBright,
+        dim: Math.max(targetBright, targetDim), // Safety wrapper to prevent WebGL inverted radius errors
+        priority: targetPriority,
+    };
+}

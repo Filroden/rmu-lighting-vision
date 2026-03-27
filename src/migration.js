@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-import { getRadiiForTier, getLightMapping, getMagicalExtension } from "./visual-mapping.js";
+import { calculateLightRenderingData } from "./visual-mapping.js";
 import { getActorVisionCapabilities } from "./vision-parser.js";
 import { registerVisionModes } from "./config.js";
 
@@ -148,7 +148,6 @@ export class RMUConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
  */
 export async function performWorldSweep(isEnabled) {
     let updatedCount = 0;
-    const mapping = getLightMapping();
 
     for (const scene of game.scenes) {
         const ambientUpdates = [];
@@ -187,60 +186,26 @@ export async function performWorldSweep(isEnabled) {
 
                 const isDarknessSource = tier >= 6 || light?.config?.isDarkness === true || (light?.config?.luminosity ?? 0) < 0;
 
-                let targetBright = 0;
-                let targetDim = 0;
-                let targetPriority = 0;
-
-                // Determine WebGL z-index rendering priority based on RMU magical hierarchy
+                let coreRadius = 0;
                 if (isMagical) {
-                    if (isDarknessSource) targetPriority = isUtter ? 15 : 5;
-                    else targetPriority = isUtter ? 20 : 10;
-                }
-
-                // Calculate baseline geometry
-                if (!isMagical && tier !== -1) {
-                    const generatedRadii = getRadiiForTier(tier);
-                    targetBright = generatedRadii.bright;
-                    targetDim = generatedRadii.dim;
-                } else if (isMagical) {
-                    let coreRadius = rmuFlags.magicalRadius;
+                    coreRadius = rmuFlags.magicalRadius;
                     if (coreRadius === undefined) {
                         coreRadius = Math.max(light?.config?.dim ?? 0, light?.config?.bright ?? 0);
                     }
-
-                    targetBright = coreRadius;
-                    // Save the core radius to prevent compounding double-scaling on future sweeps
                     flagsUpdate.magicalRadius = coreRadius;
-
-                    if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
-                        targetDim = coreRadius;
-                    } else {
-                        const safeTier = tier === -1 ? 0 : tier;
-                        const boundaryTier = Math.min(safeTier + 2, 6);
-                        targetDim = coreRadius + getMagicalExtension(boundaryTier);
-                    }
                 }
 
-                // Apply the GM's custom visual mapping (e.g., crushing shadowy light to 0)
-                if (!isDarknessSource && tier !== -1) {
-                    const radiusCategory = mapping[tier];
-                    if (radiusCategory === "dim") {
-                        targetDim = Math.max(targetBright, targetDim);
-                        targetBright = 0;
-                    } else if (radiusCategory === "off") {
-                        targetBright = 0;
-                        targetDim = 0;
-                    }
-                }
+                // The Unified Engine Call
+                const renderData = calculateLightRenderingData(tier, isMagical, isUtter, isDarknessSource, coreRadius);
 
                 // Queue the calculated changes for this ambient light
                 ambientUpdates.push({
                     _id: light.id,
                     flags: { "rmu-lighting-vision": flagsUpdate },
                     config: {
-                        bright: targetBright,
-                        dim: Math.max(targetBright, targetDim),
-                        priority: targetPriority,
+                        bright: renderData.bright,
+                        dim: renderData.dim,
+                        priority: renderData.priority,
                     },
                 });
             }
@@ -275,53 +240,23 @@ export async function performWorldSweep(isEnabled) {
 
                     const isDarknessSource = tier >= 6 || token?.light?.isDarkness === true || (token?.light?.luminosity ?? 0) < 0;
 
-                    let targetBright = 0;
-                    let targetDim = 0;
-                    let targetPriority = 0;
-
+                    let coreRadius = 0;
                     if (isMagical) {
-                        if (isDarknessSource) targetPriority = isUtter ? 15 : 5;
-                        else targetPriority = isUtter ? 20 : 10;
-                    }
-
-                    if (!isMagical && tier !== -1) {
-                        const generatedRadii = getRadiiForTier(tier);
-                        targetBright = generatedRadii.bright;
-                        targetDim = generatedRadii.dim;
-                    } else if (isMagical) {
-                        let coreRadius = rmuFlags.magicalRadius;
+                        coreRadius = rmuFlags.magicalRadius;
                         if (coreRadius === undefined) {
                             coreRadius = Math.max(token?.light?.dim ?? 0, token?.light?.bright ?? 0);
                         }
-
-                        targetBright = coreRadius;
                         flagsUpdate.magicalRadius = coreRadius;
-
-                        if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
-                            targetDim = coreRadius;
-                        } else {
-                            const safeTier = tier === -1 ? 0 : tier;
-                            const boundaryTier = Math.min(safeTier + 2, 6);
-                            targetDim = coreRadius + getMagicalExtension(boundaryTier);
-                        }
                     }
 
-                    if (!isDarknessSource && tier !== -1) {
-                        const radiusCategory = mapping[tier];
-                        if (radiusCategory === "dim") {
-                            targetDim = Math.max(targetBright, targetDim);
-                            targetBright = 0;
-                        } else if (radiusCategory === "off") {
-                            targetBright = 0;
-                            targetDim = 0;
-                        }
-                    }
+                    // The Unified Engine Call
+                    const renderData = calculateLightRenderingData(tier, isMagical, isUtter, isDarknessSource, coreRadius);
 
                     tokenPatch.flags = { "rmu-lighting-vision": flagsUpdate };
                     tokenPatch.light = {
-                        bright: targetBright,
-                        dim: Math.max(targetBright, targetDim),
-                        priority: targetPriority,
+                        bright: renderData.bright,
+                        dim: renderData.dim,
+                        priority: renderData.priority,
                     };
                     requiresUpdate = true;
                 }
