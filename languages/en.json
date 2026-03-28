@@ -10,8 +10,8 @@
     "rmu.settings.tabs.vision": "Vision Modes",
     "rmu.settings.tabs.system": "System & Migration",
 
-    "rmu.settings.canvas.hint": "Define how each RMU mechanical tier is drawn on the physical canvas. This is the raw environmental lighting before any token vision modes are applied.",
-    "rmu.settings.vision.hint": "Define how different token vision modes perceive the raw canvas lighting.",
+    "rmu.settings.canvas.hint": "Define how each RMU lighting tier is drawn on the physical canvas. This is the raw environmental lighting before any token vision modes are applied.",
+    "rmu.settings.vision.hint": "Define how different token vision modes perceive the raw environmental lighting.",
     "rmu.settings.mapping.tier": "RMU Tier",
     "rmu.settings.mapping.canvasCondition": "Canvas Condition",
     "rmu.settings.mapping.canvasRender": "Renders As...",
@@ -31,8 +31,8 @@
     "rmu.migration.appliedSuccess": "RMU Lighting Engine successfully applied to world.",
     "rmu.migration.restoredSuccess": "Foundry VTT defaults successfully restored to world.",
     "rmu.migration.welcome.p1": "It looks like this is your first time using the RMU Lighting module in this world.",
-    "rmu.migration.welcome.p2": "To use the strict RMU lighting rules, we need to migrate your existing tokens and light sources. <i>(Don't worry, your original settings are safely backed up so you can revert at any time).</i>",
-    "rmu.migration.welcome.p3": "Would you like to apply the RMU mechanics to your world now?",
+    "rmu.migration.welcome.p2": "To use the strict RMU lighting rules, you need to migrate your existing tokens and light sources. <i>(Don't worry, your original settings are backed up so you can revert at any time).</i>",
+    "rmu.migration.welcome.p3": "Would you like to apply the RMU lighting rules to your world now?",
     "rmu.migration.welcome.yes": "Apply RMU Rules Now",
     "rmu.migration.welcome.no": "Not Right Now",
 
@@ -49,9 +49,9 @@
     "rmu.vision.demonSightActive": "Observer is using Demon Sight.",
 
     "rmu.keybinds.checkLighting.name": "Check Target Lighting",
-    "rmu.keybinds.checkLighting.hint": "Outputs the exact RMU lighting degradation penalty between the selected token and their target.",
+    "rmu.keybinds.checkLighting.hint": "Outputs the exact RMU lighting penalty between the selected token and its target.",
 
-    "rmu.warnings.selectOneTarget": "You must control exactly one token and target exactly one token to calculate lighting penalties.",
+    "rmu.warnings.selectOneTarget": "You must select only one token and target only one token to calculate lighting penalties between them.",
 
     "rmu.chat.lightingReport": "RMU Lighting & Vision Report",
     "rmu.chat.observer": "Observer",
@@ -63,11 +63,11 @@
 
     "rmu.light.settingsHeader": "RMU Lighting Settings",
     "rmu.light.baseIllumination": "Base Illumination",
-    "rmu.light.baseIlluminationHint": "The starting light tier within the first 10 feet. The module will automatically degrade the light at 30, 100, and 300 feet.",
+    "rmu.light.baseIlluminationHint": "The starting light tier within the first 10 feet. The module will automatically degrade the light at 30, 100, 300, 1000, and 3000 feet.",
     "rmu.light.isMagical": "Magical Source",
-    "rmu.light.isMagicalHint": "Flags this light as magical, allowing it to overcome standard magical darkness.",
+    "rmu.light.isMagicalHint": "Flags this source as magical, allowing it to overcome mundane lights. Magical light defeats magical dark.",
     "rmu.light.isUtter.name": "Is Utterlight/Utterdark?",
-    "rmu.light.isUtter.hint": "Check this box to elevate the source to Utterlight or Utterdark (if set as a source of darkness), making it absolute.",
+    "rmu.light.isUtter.hint": "Check this box to elevate the source to Utterlight or Utterdark (if set as a source of darkness). Utter level lights defeat magical and mundane light sources. Utterlight defeats Utterdark.",
 
     "rmu.light.tiers.none": "None (Not a Light Source)",
     "rmu.light.tiers.bright": "Bright Light / No Shadows",
