@@ -65,7 +65,7 @@
     "rmu.light.baseIllumination": "Base Illumination",
     "rmu.light.baseIlluminationHint": "The starting light tier within the first 10 feet. The module will automatically degrade the light at 30, 100, 300, 1000, and 3000 feet.",
     "rmu.light.isMagical": "Magical Source",
-    "rmu.light.isMagicalHint": "Flags this source as magical, allowing it to overcome mundane lights. Magic light defeats magical dark.",
+    "rmu.light.isMagicalHint": "Flags this source as magical, allowing it to overcome mundane lights. Magical light defeats magical dark.",
     "rmu.light.isUtter.name": "Is Utterlight/Utterdark?",
     "rmu.light.isUtter.hint": "Check this box to elevate the source to Utterlight or Utterdark (if set as a source of darkness). Utter level lights defeat magical and mundane light sources. Utterlight defeats Utterdark.",
 
