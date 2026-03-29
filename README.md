@@ -1,7 +1,7 @@
 # RMU Lighting and Vision
 
-![Latest Version](https://img.shields.io/badge/Version-1.0.0-blue)
-![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v13-orange)
+![Latest Version](https://img.shields.io/badge/Version-2.0.0-blue)
+![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v14-orange)
 ![System](https://img.shields.io/badge/System-RMU-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Download Count](https://img.shields.io/github/downloads/Filroden/rmu-lighting-vision/rmu-lighting-vision.zip)
@@ -13,8 +13,10 @@
 
 The **RMU Lighting and Vision** module implements the rules for lighting and visibility in Rolemaster Unified Core Law and applies vision talents to tokens.
 
+Please install the correct version of the module:
+
 - **v1.x is compatible with v13 of FoundryVTT.**
-- **v2.x will be compatible with v14 of FoundryVTT once both are released.**
+- **v2.x is compatible with v14 of FoundryVTT.**
 
 ## Setting Expectations: Visual Compromises
 

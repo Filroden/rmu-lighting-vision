@@ -3,7 +3,7 @@
     "title": "RMU Lighting and Vision",
     "description": "The **RMU Lighting and Vision** module implements the rules for visibility in Core Law and automates many vision talents.",
     "version": "1.0.0",
-    "compatibility": { "minimum": "13", "verified": "13.351", "maximum": "13" },
+    "compatibility": { "minimum": "14", "verified": "14.358", "maximum": "14" },
     "authors": [{ "name": "Ken Dearman" }],
     "relationships": {
         "systems": [{ "id": "rmu", "type": "system", "compatibility": { "minimum": "1.0.0" } }]
