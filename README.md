@@ -1,7 +1,7 @@
 # RMU Lighting and Vision
 
 ![Latest Version](https://img.shields.io/badge/Version-2.0.0-blue)
-![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v14-orange)
+![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v13-orange)
 ![System](https://img.shields.io/badge/System-RMU-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Download Count](https://img.shields.io/github/downloads/Filroden/rmu-lighting-vision/rmu-lighting-vision.zip)
