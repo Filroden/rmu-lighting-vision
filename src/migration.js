@@ -303,13 +303,13 @@ export async function performWorldSweep(isEnabled) {
                     ...modeDefaults,
                 };
 
-                // Inject the array of parsed Detection Modes (e.g., Life Sense, Presence Sense)
-                tokenPatch.detectionModes = nativeVision.detectionModes;
+                // Assemble the mandatory detection dictionary
+                tokenPatch.detectionModes = {
+                    basicSight: { enabled: true, range: optimalRange },
+                    lightPerception: { enabled: true, range: null },
+                    ...nativeVision.detectionModes,
+                };
                 requiresUpdate = true;
-            }
-
-            if (requiresUpdate) {
-                tokenUpdates.push(tokenPatch);
             }
         }
 

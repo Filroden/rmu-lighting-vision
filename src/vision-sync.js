@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * TOKEN CREATION SYNCHRONISATION
+ * TOKEN CREATION SYNCHRONISATION (V14 READY)
  * ============================================================================
  * This script intercepts the exact moment a Game Master drags an actor from
  * the sidebar onto the canvas. It parses the actor's character sheet and
@@ -55,11 +55,20 @@ function autoConfigureTokenVision(tokenDoc) {
         visionMode: tokenDoc.sight?.visionMode ?? "basic",
         range: tokenDoc.sight?.range ?? 0,
     };
-    const originalDetectionModes = tokenDoc.detectionModes || [];
+
+    // Backup must be a Dictionary object, not an Array
+    const originalDetectionModes = tokenDoc.detectionModes || {};
 
     // Extract the specific shader slider defaults (colour tint, contrast, etc.)
     // that we defined in config.js for the chosen vision mode.
     const modeDefaults = CONFIG.Canvas.visionModes[optimalMode]?.vision?.defaults || {};
+
+    // Assemble the mandatory core detection dictionary alongside our custom parsed modes
+    const finalDetectionModes = {
+        basicSight: { enabled: true, range: optimalRange },
+        lightPerception: { enabled: true, range: null },
+        ...nativeVision.detectionModes,
+    };
 
     // --- DATABASE MUTATION ---
     // Because we are in a 'preCreate' hook, we use updateSource() to mutate the
@@ -75,7 +84,7 @@ function autoConfigureTokenVision(tokenDoc) {
             range: optimalRange,
             ...modeDefaults, // Spreads the precise slider settings directly into the token's sight data
         },
-        detectionModes: nativeVision.detectionModes,
+        detectionModes: finalDetectionModes,
     });
 }
 

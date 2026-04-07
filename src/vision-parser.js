@@ -25,7 +25,7 @@ export function getActorVisionCapabilities(actor) {
         thermalRange: 0,
         hasDemonSight: false,
         demonSightRange: 0,
-        detectionModes: [],
+        detectionModes: {},
     };
 
     if (!actor) return capabilities;
@@ -38,6 +38,16 @@ export function getActorVisionCapabilities(actor) {
 
     // Extract the actor's level for talents whose ranges scale by level
     const level = actor.system?.experience?.level || 1;
+
+    // --- DETECTION MODE DEDUPLICATION & DICTIONARY BUILDER ---
+    // V14 strictly expects detection modes to be a Record object keyed by the mode ID.
+    // This helper ensures we safely build that object and only keep the highest range
+    // if a character has multiple talents granting the same sense.
+    const addDetectionMode = (id, range) => {
+        if (!capabilities.detectionModes[id] || range > capabilities.detectionModes[id].range) {
+            capabilities.detectionModes[id] = { enabled: true, range: range };
+        }
+    };
 
     for (const talent of talents) {
         // Extract the talent name, falling back to the base item name if needed
@@ -62,7 +72,7 @@ export function getActorVisionCapabilities(actor) {
                 capabilities.hasThermalVision = true;
                 capabilities.thermalRange = 50;
                 // Thermal natively grants See Invisibility out to 50'
-                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: 50 });
+                addDetectionMode("seeInvisibility", 50);
                 break;
             case "Sight, Demon":
                 capabilities.hasDemonSight = true;
@@ -71,46 +81,30 @@ export function getActorVisionCapabilities(actor) {
                 capabilities.hasThermalVision = true;
                 capabilities.thermalRange = 50;
                 // It also grants scaling See Invisibility (5' per level) on top of the base 50' from Thermal
-                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: level * 5 });
-                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: 50 });
+                addDetectionMode("seeInvisibility", Math.max(50, level * 5));
                 break;
             case "Invisibility Sense":
-                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: level * 5 });
+                addDetectionMode("seeInvisibility", level * 5);
                 break;
             case "Tremorsense":
-                capabilities.detectionModes.push({ id: "feelTremor", enabled: true, range: 50 });
+                addDetectionMode("feelTremor", 50);
                 break;
             case "Life Sense":
                 // Maps to the custom Detection Filter created in config.js
-                capabilities.detectionModes.push({ id: "rmuLifeSense", enabled: true, range: tier * 5 });
+                addDetectionMode("rmuLifeSense", tier * 5);
                 break;
             case "Presence Sense":
                 // Maps to the custom Detection Filter created in config.js
-                capabilities.detectionModes.push({ id: "rmuPresenceSense", enabled: true, range: level * 5 });
+                addDetectionMode("rmuPresenceSense", level * 5);
                 break;
             case "Air Movement Detection":
-                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: tier });
+                addDetectionMode("seeInvisibility", tier);
                 break;
             case "Electrolocation, Passive":
-                capabilities.detectionModes.push({ id: "seeInvisibility", enabled: true, range: level });
+                addDetectionMode("seeInvisibility", level);
                 break;
         }
     }
-
-    // --- DETECTION MODE DEDUPLICATION ---
-    // If a character has multiple talents that grant the same detection mode
-    // (e.g., Demon Sight and Invisibility Sense both grant 'seeInvisibility'),
-    // pushing all of them to the WebGL engine causes redundant rendering layers.
-    // This loop merges duplicates, ensuring only the version with the highest range survives.
-    const mergedModes = {};
-    for (const mode of capabilities.detectionModes) {
-        if (!mergedModes[mode.id] || mode.range > mergedModes[mode.id].range) {
-            mergedModes[mode.id] = mode;
-        }
-    }
-
-    // Convert the deduplicated object map back into a flat array for Foundry to ingest
-    capabilities.detectionModes = Object.values(mergedModes);
 
     return capabilities;
 }

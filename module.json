@@ -2,8 +2,8 @@
     "id": "rmu-lighting-vision",
     "title": "RMU Lighting and Vision",
     "description": "The **RMU Lighting and Vision** module implements the rules for visibility in Core Law and automates many vision talents.",
-    "version": "1.0.0",
-    "compatibility": { "minimum": "13", "verified": "13.351", "maximum": "13" },
+    "version": "2.0.0",
+    "compatibility": { "minimum": "14", "verified": "14.359" },
     "authors": [{ "name": "Ken Dearman" }],
     "relationships": {
         "systems": [{ "id": "rmu", "type": "system", "compatibility": { "minimum": "1.0.0" } }]
@@ -16,7 +16,7 @@
     ],
     "url": "https://github.com/Filroden/rmu-lighting-vision",
     "manifest": "https://github.com/Filroden/rmu-lighting-vision/releases/latest/download/module.json",
-    "download": "https://github.com/Filroden/rmu-lighting-vision/releases/download/v1.0.0/rmu-lighting-vision.zip",
+    "download": "https://github.com/Filroden/rmu-lighting-vision/releases/download/v2.0.0/rmu-lighting-vision.zip",
     "bugs": "https://github.com/Filroden/rmu-lighting-vision/issues",
     "readme": "https://github.com/Filroden/rmu-lighting-vision/blob/main/README.md",
     "license": "https://mit-license.org/"

@@ -36,7 +36,7 @@ function getDynamicTiers() {
  * Calculates the exact geometric radii required to render a mundane light source.
  * It simulates light degrading over distance and checks those degraded tiers against
  * the GM's visual mapping to find the physical cutoff points for Bright and Dim light.
- * * @param {number} baseTier - The illumination tier at the epicentre of the light (0-6).
+ * @param {number} baseTier - The illumination tier at the epicentre of the light (0-6).
  * @returns {Object} An object containing the { bright, dim } radii in feet.
  */
 export function getRadiiForTier(baseTier) {
@@ -87,7 +87,7 @@ export function getLightMapping() {
  * Calculates how far diffused Magical Light bleeds past its core radius boundary.
  * Unlike mundane light, magical light drops 2 tiers immediately upon exiting its
  * defined radius, and then resumes normal degradation.
- * * @param {number} auraStartTier - The degraded tier exactly outside the magical boundary.
+ * @param {number} auraStartTier - The degraded tier exactly outside the magical boundary.
  * @returns {number} The maximum additional distance (in feet) the dim light extends.
  */
 export function getMagicalExtension(auraStartTier) {
@@ -119,7 +119,7 @@ export function getMagicalExtension(auraStartTier) {
  * Centralised calculation engine that takes raw narrative flags and
  * outputs the exact geometric radii and WebGL priorities for the canvas.
  * This prevents DRY violations between real-time syncing and bulk migrations.
- * * @param {number} tier - The RMU illumination tier (0-6, or -1 for unlit).
+ * @param {number} tier - The RMU illumination tier (0-6, or -1 for unlit).
  * @param {boolean} isMagical - Whether the source is magical.
  * @param {boolean} isUtter - Whether the source is Utterlight/Utterdark.
  * @param {boolean} isDarknessSource - Whether this source emits darkness.
@@ -132,9 +132,6 @@ export function calculateLightRenderingData(tier, isMagical, isUtter, isDarkness
     let targetPriority = 0;
 
     // 1. Determine WebGL Rendering Priority
-    // By default, Foundry draws light sources based on elevation or creation order.
-    // To enforce the RMU absolute hierarchy, we manipulate the WebGL z-index priority.
-    // Utterdark (15) > Magical Darkness (5) | Utterlight (20) > Magical Light (10) > Mundane (0).
     if (isMagical) {
         if (isDarknessSource) targetPriority = isUtter ? 15 : 5;
         else targetPriority = isUtter ? 20 : 10;
@@ -142,18 +139,15 @@ export function calculateLightRenderingData(tier, isMagical, isUtter, isDarkness
 
     // 2. Calculate Baseline Geometry
     if (!isMagical && tier !== -1) {
-        // Mundane light strictly follows the predefined physical distances from Table 15-7.
         const generatedRadii = getRadiiForTier(tier);
         targetBright = generatedRadii.bright;
         targetDim = generatedRadii.dim;
     } else if (isMagical) {
         targetBright = coreRadius;
 
-        // Determine if magical light spills beyond its core radius (based on GM settings).
         if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
             targetDim = coreRadius;
         } else {
-            // Step the light down 2 tiers at the boundary, and calculate how far it extends.
             const safeTier = tier === -1 ? 0 : tier;
             const boundaryTier = Math.min(safeTier + 2, 6);
             targetDim = coreRadius + getMagicalExtension(boundaryTier);
@@ -161,24 +155,32 @@ export function calculateLightRenderingData(tier, isMagical, isUtter, isDarkness
     }
 
     // 3. The Visual Mapping Crusher
-    // Before finalising, we pass the calculated radii through the GM's custom Tab 1 visual mappings.
-    // If the GM configured "Shadowy" light to render as completely Unlit, we crush the bright/dim values to 0 here.
     if (!isDarknessSource && tier !== -1) {
         const mapping = getLightMapping();
         const radiusCategory = mapping[tier];
 
         if (radiusCategory === "dim") {
             targetDim = Math.max(targetBright, targetDim);
-            targetBright = 0; // Crush bright light down to dim
+            targetBright = 0;
         } else if (radiusCategory === "off") {
-            targetBright = 0; // Completely extinguish visual light
+            targetBright = 0;
             targetDim = 0;
         }
     }
 
+    // 4. Dynamic WebGL Hardware Safety Clamp
+    // Translates the absolute PIXI.js pixel limit (~16384px texture) into the
+    // scene's custom map scale to prevent GPU crashes on varying grid sizes.
+    // A 6000px safe radius ensures the diameter never exceeds the crash threshold.
+    let safeMaxUnits = 300; // Safe fallback for a standard 5-unit/100px grid
+    if (canvas?.dimensions) {
+        const unitsPerPixel = canvas.dimensions.distance / canvas.dimensions.size;
+        safeMaxUnits = 6000 * unitsPerPixel;
+    }
+
     return {
-        bright: targetBright,
-        dim: Math.max(targetBright, targetDim), // Safety wrapper to prevent WebGL inverted radius errors
+        bright: Math.min(targetBright, safeMaxUnits),
+        dim: Math.min(Math.max(targetBright, targetDim), safeMaxUnits),
         priority: targetPriority,
     };
 }
