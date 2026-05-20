@@ -35,10 +35,11 @@ function syncLightRadii(document, updateData) {
 
     // Determine the intended illumination tier and magical properties.
     let rawTier = rmuFlags.baseIllumination ?? currentFlags.baseIllumination ?? -1;
-    let tier = parseInt(rawTier, 10);
+    let tier = Number.parseInt(rawTier, 10);
 
     let isMagical = rmuFlags.isMagical ?? currentFlags.isMagical ?? false;
     const isUtter = rmuFlags.isUtter ?? currentFlags.isUtter ?? false;
+    const isConstant = rmuFlags.isConstant ?? currentFlags.isConstant ?? false;
 
     // Foundry handles Token light data and AmbientLight data in slightly different object structures.
     const isToken = document.documentName === "Token";
@@ -56,7 +57,7 @@ function syncLightRadii(document, updateData) {
     }
 
     // Abort if this is a standard, unconfigured Foundry light source
-    if (isNaN(tier) || (tier === -1 && !isMagical && !isUtter)) return;
+    if (Number.isNaN(tier) || (tier === -1 && !isMagical && !isUtter)) return;
 
     // Read-only check: Identify if this is a darkness source (Pitch Black tier, or a native Foundry negative light).
     const isDarknessSource = tier >= 6 || (updatedLight?.isDarkness ?? currentLight?.isDarkness ?? false) === true || (updatedLight?.luminosity ?? currentLight?.luminosity ?? 0) < 0;
@@ -77,8 +78,10 @@ function syncLightRadii(document, updateData) {
 
     let coreRadius = 0;
 
-    if (isMagical) {
-        // --- IMMUTABLE MAGICAL RADIUS LOGIC ---
+    // Both Magical and Constant lights rely on a manually typed radius,
+    // so both must be protected from being overwritten during world sweeps.
+    if (isMagical || isConstant) {
+        // --- IMMUTABLE RADIUS LOGIC ---
         const dimChanged = updatedLight?.dim !== undefined && updatedLight.dim !== currentLight?.dim;
         const brightChanged = updatedLight?.bright !== undefined && updatedLight.bright !== currentLight?.bright;
         const userChangedRadius = !isSweep && (dimChanged || brightChanged);
@@ -86,6 +89,8 @@ function syncLightRadii(document, updateData) {
         if (userChangedRadius) {
             coreRadius = Math.max(updatedLight?.dim ?? currentLight?.dim ?? 0, updatedLight?.bright ?? currentLight?.bright ?? 0);
         } else {
+            // We continue using 'magicalRadius' as the database key to maintain
+            // backwards compatibility with pre-existing magical lights.
             coreRadius = currentFlags.magicalRadius ?? Math.max(currentLight?.dim ?? 0, currentLight?.bright ?? 0);
         }
 
@@ -95,7 +100,7 @@ function syncLightRadii(document, updateData) {
     }
 
     // --- THE UNIFIED CALCULATION ENGINE ---
-    const renderData = calculateLightRenderingData(tier, isMagical, isUtter, isDarknessSource, coreRadius);
+    const renderData = calculateLightRenderingData(tier, isMagical, isUtter, isDarknessSource, coreRadius, isConstant);
 
     // --- INJECT THE MUTATION ---
     // Finally, forcefully apply the calculated values to the incoming data payload.

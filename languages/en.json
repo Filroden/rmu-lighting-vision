@@ -83,5 +83,8 @@
 
     "rmu.lighting.heatmap.disabled": "RMU Lighting: Heatmap Disabled.",
     "rmu.lighting.heatmap.generating": "RMU Lighting: Generating Heatmap... Please wait.",
-    "rmu.lighting.heatmap.complete": "RMU Lighting: Heatmap Complete."
+    "rmu.lighting.heatmap.complete": "RMU Lighting: Heatmap Complete.",
+
+    "rmu.keybinds.heatmap.name": "Toggle Diagnostic Heatmap",
+    "rmu.keybinds.heatmap.hint": "Toggles a visual overlay showing the mathematical boundaries of all RMU lighting tiers. Restricted to Game Masters."
 }

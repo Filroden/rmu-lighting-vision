@@ -205,17 +205,6 @@ export class RMULightHeatmap {
  * Initialises the keyboard listener for the module.
  */
 export function initHeatmapListener() {
-    window.addEventListener("keydown", (event) => {
-        // Alt + L triggers the Heatmap
-        if (event.altKey && event.code === "KeyL") {
-            // Secondary authorisation check to prevent players from executing the hotkey
-            if (!game.user.isGM) return;
-
-            event.preventDefault(); // Prevents the browser from focusing the URL address bar
-            RMULightHeatmap.toggle();
-        }
-    });
-
     // Automatically purge the heavy texture from memory if the GM changes scenes
     Hooks.on("canvasTearDown", () => {
         RMULightHeatmap.clear();

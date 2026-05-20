@@ -19,7 +19,7 @@ async function injectRMULightSettings(app, html, data) {
     // 1. Root Extraction (Cross-Version Compatibility)
     // Foundry is transitioning between old ApplicationV1 (jQuery) and new ApplicationV2 (HTMLElement).
     // This extraction safely navigates both architectures to find the true DOM root.
-    const root = app?.form ?? app?.element ?? (html.length !== undefined ? html[0] : html);
+    const root = app?.form ?? app?.element ?? (html.length === undefined ? html : html[0]);
     if (!root) return;
 
     // Defensive Check: Prevent duplicate DOM injections.

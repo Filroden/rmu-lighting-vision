@@ -1,7 +1,7 @@
 # RMU Lighting and Vision
 
-![Latest Version](https://img.shields.io/badge/Version-2.0.0-blue)
-![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v13-orange)
+![Latest Version](https://img.shields.io/badge/Version-2.1.0-blue)
+![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v14-orange)
 ![System](https://img.shields.io/badge/System-RMU-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Download Count](https://img.shields.io/github/downloads/Filroden/rmu-lighting-vision/rmu-lighting-vision.zip)
@@ -30,6 +30,7 @@ It is important to understand that this module has to make visual compromises to
 ## Features
 
 - **True RMU Light Degradation:** Calculates the exact light tier (`Bright`, `Uneven`, `Dim`, `Shadowy`, `Dark`, `Extremely Dark`, `Pitch Black`) based on the distance from the light source (10', 30', 100', 300', 1000' and 3000' thresholds).
+- **Environmental Light Sources:** Light sources can be configured as "environmental light sources". These are treated as special light sources that do not follow the normal RMU rules. They can be set to any radius and their light does not degrade with distance. They provide a constant level of illumination over a scene, e.g., setting an environmental light to be `Shadowy` would create a moonlit scene. This illumination would be respected by vision talents, e.g., characters with nightvision could see well in `Shadowy` light. Environmental lights respect walls on the scene, so building interiors, caves, etc would not be illuminated if the source was placed outside.
 - **Native Talent Parsing:** Automatically reads the RMU Actor document upon token creation to determine if a character possesses advanced vision talents or detection senses, applying the correct Foundry settings instantly.
 - **Magical Light Configuration:** Allows GMs to flag light sources as magical (or as `Utter`), with a global setting to determine whether magical light degrades over distance or illuminates only within its full radius equally.
 - **Instant Chat Output:** Press `Shift + L` while targeting a token or hovering the mouse on the canvas to immediately post a chat card displaying both the "Sight Required" and "Sight Helpful" penalties for that position, accounting for all active vision modes.

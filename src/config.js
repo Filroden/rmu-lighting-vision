@@ -131,13 +131,13 @@ export function registerVisionModes() {
     // Thermal vision uses the ColorAdjustmentsSamplerShader to mathematically multiply
     // the canvas pixels by a specific hexadecimal colour to create a heat-map aesthetic.
     const thermalConfig = {
-        canvas: { shader: ColorAdjustmentsSamplerShader, uniforms: { contrast: 0.2, saturation: 1.0, brightness: 0.1 } },
+        canvas: { shader: ColorAdjustmentsSamplerShader, uniforms: { contrast: 0.2, saturation: 1, brightness: 0.1 } },
         vision: {
             darkness: { adaptive: false },
             illuminates: true,
             preferred: true,
             // 0xffb366 is a washed amber. We keep the tint soft so it doesn't obliterate the underlying map art.
-            defaults: { color: 0xffb366, attenuation: 0, contrast: 0.2, saturation: 1.0, brightness: 0.1 },
+            defaults: { color: 0xffb366, attenuation: 0, contrast: 0.2, saturation: 1, brightness: 0.1 },
         },
     };
 
@@ -197,7 +197,7 @@ export function registerDetectionModes() {
         static getDetectionFilter() {
             // Arrays are formatted as [Red, Green, Blue, Alpha] using normalised floats (0.0 to 1.0).
             this._detectionFilter ??= RMUOutlineFilter.create({
-                outlineColor: [0.0, 1.0, 1.0, 1.0], // Cyan
+                outlineColor: [0, 1, 1, 1], // Cyan
             });
             return this._detectionFilter;
         }
@@ -238,7 +238,7 @@ export function registerDetectionModes() {
     class DetectionModePresenceSense extends SenseAllMode {
         static getDetectionFilter() {
             this._detectionFilter ??= RMUOutlineFilter.create({
-                outlineColor: [1.0, 0.0, 0.0, 1.0], // Red/Magenta
+                outlineColor: [1, 0, 0, 1], // Red/Magenta
             });
             return this._detectionFilter;
         }

@@ -58,7 +58,7 @@ function getDistanceToTargetEdge(origin, target, targetPoint) {
  */
 function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
     let effectiveDistance = distance;
-    let effectiveBase = parseInt(baseTier, 10);
+    let effectiveBase = Number.parseInt(baseTier, 10);
 
     // The strict distance boundaries defined by RMU Core Law
     const thresholds = [10, 30, 100, 300, 1000, 3000];
@@ -118,7 +118,6 @@ export function getBestIlluminationTier(target, targetPoint) {
             else if (darkness <= 0.25) globalAmbientTier = 1;
             else if (darkness <= 0.5) globalAmbientTier = 2;
             else if (darkness <= 0.75) globalAmbientTier = 4;
-            else globalAmbientTier = 6;
         }
     }
 
@@ -139,8 +138,8 @@ export function getBestIlluminationTier(target, targetPoint) {
         const rmuFlags = lightDoc.flags?.["rmu-lighting-vision"] || {};
 
         const rawTier = rmuFlags.baseIllumination ?? 0;
-        const baseIllumination = parseInt(rawTier, 10);
-        if (isNaN(baseIllumination) || baseIllumination === -1) continue;
+        const baseIllumination = Number.parseInt(rawTier, 10);
+        if (Number.isNaN(baseIllumination) || baseIllumination === -1) continue;
 
         const isMagical = rmuFlags.isMagical ?? false;
         const isUtter = rmuFlags.isUtter ?? false;
@@ -214,9 +213,7 @@ export function getBestIlluminationTier(target, targetPoint) {
                 bestMagicalTier = calculatedTier;
             }
         } else {
-            if (calculatedTier < bestMundaneTier) {
-                bestMundaneTier = calculatedTier;
-            }
+            bestMundaneTier = calculatedTier;
         }
     }
 
@@ -298,7 +295,14 @@ export function determineLightingState(sourceDoc, target) {
 
     // Extract the physical radius of the observing token
     const sourceRadius = sourceDoc.object?.externalRadius ?? (Math.max(sourceDoc.width || 1, sourceDoc.height || 1) * canvas.grid.size) / 2;
-    const targetPoint = target.object ? target.object.center : target.x !== undefined ? target : { x: target.x, y: target.y };
+    let targetPoint;
+    if (target.object) {
+        targetPoint = target.object.center;
+    } else if (target.x === undefined) {
+        targetPoint = { x: target.x, y: target.y };
+    } else {
+        targetPoint = target;
+    }
 
     const pixelDistance = getDistanceToTargetEdge(sourceCenter, target, targetPoint);
     const gridDistance = canvas.scene?.grid?.distance ?? 5;
