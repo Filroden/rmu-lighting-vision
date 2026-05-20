@@ -1,7 +1,7 @@
 # RMU Lighting and Vision
 
-![Latest Version](https://img.shields.io/badge/Version-2.0.0-blue)
-![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v13-orange)
+![Latest Version](https://img.shields.io/badge/Version-2.1.0-blue)
+![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v14-orange)
 ![System](https://img.shields.io/badge/System-RMU-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ![Download Count](https://img.shields.io/github/downloads/Filroden/rmu-lighting-vision/rmu-lighting-vision.zip)
@@ -30,6 +30,7 @@ It is important to understand that this module has to make visual compromises to
 ## Features
 
 - **True RMU Light Degradation:** Calculates the exact light tier (`Bright`, `Uneven`, `Dim`, `Shadowy`, `Dark`, `Extremely Dark`, `Pitch Black`) based on the distance from the light source (10', 30', 100', 300', 1000' and 3000' thresholds).
+- **Environmental Light Sources:** Light sources can be configured as "environmental light sources". These are treated as special light sources that do not follow the normal RMU rules. They can be set to any radius and their light does not degrade with distance. They provide a constant level of illumination over a scene, e.g., setting an environmental light to be `Shadowy` would create a moonlit scene. This illumination would be respected by vision talents, e.g., characters with nightvision could see well in `Shadowy` light. Environmental lights respect walls on the scene, so building interiors, caves, etc would not be illuminated if the source was placed outside.
 - **Native Talent Parsing:** Automatically reads the RMU Actor document upon token creation to determine if a character possesses advanced vision talents or detection senses, applying the correct Foundry settings instantly.
 - **Magical Light Configuration:** Allows GMs to flag light sources as magical (or as `Utter`), with a global setting to determine whether magical light degrades over distance or illuminates only within its full radius equally.
 - **Instant Chat Output:** Press `Shift + L` while targeting a token or hovering the mouse on the canvas to immediately post a chat card displaying both the "Sight Required" and "Sight Helpful" penalties for that position, accounting for all active vision modes.
@@ -79,7 +80,13 @@ These talents do not colour the canvas, but act as a radar. They pierce physical
 ## How to Use
 
 1. **Configure Light Sources:** Open the configuration sheet for any Ambient Light or Token emitting light. Find the new **RMU Lighting Settings** section.
-2. **Set Base Illumination:** Select the light level present within the first 10 feet of the source (e.g., a Torch is *Dim Light*). The module will automatically degrade the light mathematically. Set the option if the source is magical. Depending on your game setting, this will make the magic light either act like a spotlight with no light spilling beyond the radius, or it will act like natural light but suffer 2 steps of light degradation at the first boundary before degrading normally.
+2. **Set Base Illumination:** Select the light level present within the first 10 feet of the source (e.g., a Torch is *Dim Light*). The module will automatically degrade the light mathematically.
+   - Set the option if the source is magical. Depending on your game setting, this will make the magic light either act like a spotlight with no light spilling beyond the radius, or it will act like natural light but suffer 2 steps of light degradation at the first boundary before degrading normally.
+   - Set the option if the source is Utterlight/Utterdark. Utter level lights defeat magical and mundane level light sources. Utterlight defeats Utterdark.
+   - Set the option if the source is an environmental light. Note that a light cannot be both environmental and magical/utter. This option will override the light degrading.
+
+   ![Light Configuration](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/light-configuration.png)
+
 3. **Automated Tokens:** Simply drag an Actor with recognised vision talents onto the canvas. The module will automatically configure their Vision Modes and Detection Ranges.
 4. **Calculate Penalties:** Select your token, target an enemy token or point to a location on the canvas, and press `Shift + L` to output the exact environmental modifiers to the chat.
 
@@ -140,6 +147,26 @@ Unlike vision, the engine cannot automatically guess the narrative intent behind
 
 **4. Uninstalling or Disabling**
 If you wish to stop using the module, open the **System & Migration** tab and click **Restore Foundry Defaults**. This will strip the custom RMU shaders from your tokens and restore your light radii exactly to where they were before the module was applied.
+
+## GM Tips for Simulating Moonlight, Starlight and Other Ambient Lighting
+
+When using Environmental Light Sources to simulate ambient weather (like a moonlit night or a glowing magical fog), you might notice that cliffs or tall walls cast massive, map-spanning shadows. This happens because Foundry VTT treats all light sources as radiating from a single specific point, rather than falling evenly from the sky.
+
+Here are two tips to make your ambient lighting look better:
+
+### Tip 1: The "Multiple Moons" Method (Fastest)
+
+If you are playing on a flat map and want to eliminate long shadows cast by trees or ruins, simply place your Environmental Light, copy it, and paste it into the four corners of your map. Because the light is hitting the walls from every angle, the point-source shadows cancel each other out. Building interiors and caves will remain dark, as they are enclosed by walls on all sides.
+
+### Tip 2: Using Scene Levels (Foundry v14+)
+
+For complex maps with cliffs, valleys, and tavern roofs, use Foundry v14's native Scene Levels:
+
+1. Slice your map into distinct elevation levels (e.g., a ground level, a cliff level, and a roof level).
+
+2. Place your Environmental Light and include it in all levels you want it to illuminate.
+
+Foundry will then allow the light to illuminate the tops of the cliffs and the valleys below, whilst walls will still block the ambient light from penetrating into caves and building interiors.
 
 ## Upcoming Features (Roadmap)
 

@@ -3,6 +3,27 @@
    Utilises variables from filroden-theme.css
 =================================================================== */
 
+/* --- MATERIAL DESIGN ICONS --- */
+.rmu-lighting-icon {
+    display: inline-block;
+    width: var(--filroden-font-size-l); 
+    height: var(--filroden-font-size-l);
+    min-width: var(--filroden-font-size-l);
+    background-color: currentColor;
+    background-image: none !important;
+    content: "";
+    transform: scaleX(var(--filroden-dir-flip));
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    margin: 0;
+}
+
+.rmu-lighting-icon.info     { -webkit-mask-image: url('../icons/info.svg'); mask-image: url('../icons/info.svg'); }
+
 /* --- 1. Chat Card Formatting --- */
 .rmu-lighting-chat {
     background-color: var(--filroden-color-bg-darkest);
@@ -96,14 +117,11 @@
     letter-spacing: var(--filroden-letter-spacing-wide);
 }
 
-/* Override Foundry's default row layout to allow the hint text to wrap */
-.rmu-light-settings.form-group {
-    flex-direction: column;
-    flex-wrap: wrap;
-}
-
 .rmu-light-settings .form-group {
+    display: flex;
     flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
 }
 
 /* Force the hint text to take up the full width below the inputs and apply a readable dark colour */

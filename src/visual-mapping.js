@@ -116,6 +116,117 @@ export function getMagicalExtension(auraStartTier) {
 }
 
 /**
+ * ============================================================================
+ * RENDERING ENGINE CONSTANTS
+ * ============================================================================
+ */
+const RENDERING_PRIORITY = {
+    UTTERLIGHT: 20,
+    UTTERDARK: 15,
+    MAGICAL_LIGHT: 10,
+    MAGICAL_DARKNESS: 5,
+    MUNDANE: 0,
+};
+
+const HARDWARE_LIMITS = {
+    WEBGL_SAFE_TEXTURE_PIXELS: 6000,
+    DEFAULT_GRID_SAFE_UNITS: 300,
+};
+
+const TIER_CONSTANTS = {
+    UNLIT: -1,
+    MAX_PITCH_BLACK: 6,
+    MAGICAL_DEGRADATION_STEP: 2,
+};
+
+/**
+ * ============================================================================
+ * ENGINE HELPER FUNCTIONS
+ * ============================================================================
+ */
+
+/**
+ * Determines the Z-index rendering hierarchy for WebGL.
+ */
+function _calculateRenderingPriority(isMagical, isUtter, isDarknessSource) {
+    if (!isMagical) return RENDERING_PRIORITY.MUNDANE;
+
+    if (isDarknessSource) {
+        return isUtter ? RENDERING_PRIORITY.UTTERDARK : RENDERING_PRIORITY.MAGICAL_DARKNESS;
+    }
+
+    return isUtter ? RENDERING_PRIORITY.UTTERLIGHT : RENDERING_PRIORITY.MAGICAL_LIGHT;
+}
+
+/**
+ * Calculates raw geometric distances before user preferences are applied.
+ */
+function _calculateBaselineGeometry(tier, isMagical, isDarknessSource, coreRadius, isConstant) {
+    if (!isMagical) {
+        if (tier === TIER_CONSTANTS.UNLIT) return { bright: 0, dim: 0 };
+        if (isConstant) return { bright: coreRadius, dim: coreRadius };
+        return getRadiiForTier(tier);
+    }
+
+    const bright = coreRadius;
+    let dim = coreRadius;
+    const magicalLightDegrades = game.settings.get("rmu-lighting-vision", "magicalLightDegrades");
+
+    if (!isDarknessSource && magicalLightDegrades) {
+        const safeTier = tier === TIER_CONSTANTS.UNLIT ? 0 : tier;
+        const boundaryTier = Math.min(safeTier + TIER_CONSTANTS.MAGICAL_DEGRADATION_STEP, TIER_CONSTANTS.MAX_PITCH_BLACK);
+        dim = coreRadius + getMagicalExtension(boundaryTier);
+    }
+
+    return { bright, dim };
+}
+
+/**
+ * Overrides calculated geometry based on the GM's custom visual mappings.
+ */
+function _applyVisualMappingCrusher(tier, isDarknessSource, currentBright, currentDim) {
+    if (isDarknessSource || tier === TIER_CONSTANTS.UNLIT) {
+        return { bright: currentBright, dim: currentDim };
+    }
+
+    const mapping = getLightMapping();
+    const radiusCategory = mapping[tier];
+
+    if (radiusCategory === "dim") {
+        return { bright: 0, dim: Math.max(currentBright, currentDim) };
+    }
+
+    if (radiusCategory === "off") {
+        return { bright: 0, dim: 0 };
+    }
+
+    return { bright: currentBright, dim: currentDim };
+}
+
+/**
+ * Translates the absolute PIXI.js pixel limit into the scene's custom map scale.
+ */
+function _getHardwareSafetyClamp(isConstant) {
+    if (!canvas?.dimensions) return HARDWARE_LIMITS.DEFAULT_GRID_SAFE_UNITS;
+
+    // ENVIRONMENTAL EXCEPTION: If the GM wants a map-wide light, cap it at the
+    // maximum physical diagonal of the scene to prevent WebGL infinite-plane crashes.
+    if (isConstant) {
+        const unitsPerPixel = canvas.dimensions.distance / canvas.dimensions.size;
+        return canvas.dimensions.maxR * unitsPerPixel;
+    }
+
+    const unitsPerPixel = canvas.dimensions.distance / canvas.dimensions.size;
+    return HARDWARE_LIMITS.WEBGL_SAFE_TEXTURE_PIXELS * unitsPerPixel;
+}
+
+/**
+ * ============================================================================
+ * MASTER RENDERING FUNCTION
+ * ============================================================================
+ */
+
+/**
  * Centralised calculation engine that takes raw narrative flags and
  * outputs the exact geometric radii and WebGL priorities for the canvas.
  * This prevents DRY violations between real-time syncing and bulk migrations.
@@ -124,63 +235,23 @@ export function getMagicalExtension(auraStartTier) {
  * @param {boolean} isUtter - Whether the source is Utterlight/Utterdark.
  * @param {boolean} isDarknessSource - Whether this source emits darkness.
  * @param {number} coreRadius - The baseline radius for magical scaling (0 for mundane).
+ * @param {boolean} isConstant - [NEW] Whether the light bypasses degradation.
  * @returns {Object} An object containing { bright, dim, priority }.
  */
-export function calculateLightRenderingData(tier, isMagical, isUtter, isDarknessSource, coreRadius) {
-    let targetBright = 0;
-    let targetDim = 0;
-    let targetPriority = 0;
+export function calculateLightRenderingData(tier, isMagical, isUtter, isDarknessSource, coreRadius, isConstant = false) {
+    const priority = _calculateRenderingPriority(isMagical, isUtter, isDarknessSource);
 
-    // 1. Determine WebGL Rendering Priority
-    if (isMagical) {
-        if (isDarknessSource) targetPriority = isUtter ? 15 : 5;
-        else targetPriority = isUtter ? 20 : 10;
-    }
+    let { bright, dim } = _calculateBaselineGeometry(tier, isMagical, isDarknessSource, coreRadius, isConstant);
 
-    // 2. Calculate Baseline Geometry
-    if (!isMagical && tier !== -1) {
-        const generatedRadii = getRadiiForTier(tier);
-        targetBright = generatedRadii.bright;
-        targetDim = generatedRadii.dim;
-    } else if (isMagical) {
-        targetBright = coreRadius;
+    const crushedRadii = _applyVisualMappingCrusher(tier, isDarknessSource, bright, dim);
+    bright = crushedRadii.bright;
+    dim = crushedRadii.dim;
 
-        if (isDarknessSource || !game.settings.get("rmu-lighting-vision", "magicalLightDegrades")) {
-            targetDim = coreRadius;
-        } else {
-            const safeTier = tier === -1 ? 0 : tier;
-            const boundaryTier = Math.min(safeTier + 2, 6);
-            targetDim = coreRadius + getMagicalExtension(boundaryTier);
-        }
-    }
-
-    // 3. The Visual Mapping Crusher
-    if (!isDarknessSource && tier !== -1) {
-        const mapping = getLightMapping();
-        const radiusCategory = mapping[tier];
-
-        if (radiusCategory === "dim") {
-            targetDim = Math.max(targetBright, targetDim);
-            targetBright = 0;
-        } else if (radiusCategory === "off") {
-            targetBright = 0;
-            targetDim = 0;
-        }
-    }
-
-    // 4. Dynamic WebGL Hardware Safety Clamp
-    // Translates the absolute PIXI.js pixel limit (~16384px texture) into the
-    // scene's custom map scale to prevent GPU crashes on varying grid sizes.
-    // A 6000px safe radius ensures the diameter never exceeds the crash threshold.
-    let safeMaxUnits = 300; // Safe fallback for a standard 5-unit/100px grid
-    if (canvas?.dimensions) {
-        const unitsPerPixel = canvas.dimensions.distance / canvas.dimensions.size;
-        safeMaxUnits = 6000 * unitsPerPixel;
-    }
+    const safeMaxUnits = _getHardwareSafetyClamp(isConstant);
 
     return {
-        bright: Math.min(targetBright, safeMaxUnits),
-        dim: Math.min(Math.max(targetBright, targetDim), safeMaxUnits),
-        priority: targetPriority,
+        bright: Math.min(bright, safeMaxUnits),
+        dim: Math.min(Math.max(bright, dim), safeMaxUnits),
+        priority: priority,
     };
 }

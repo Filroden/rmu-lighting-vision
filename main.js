@@ -4,7 +4,7 @@ import { determineLightingState } from "./src/calculator.js";
 import { outputLightingToChat } from "./src/chat.js";
 import { registerVisionSourceOverride } from "./src/rmu-vision-source.js";
 import { performWorldSweep } from "./src/migration.js";
-import { initHeatmapListener } from "./src/heatmap.js";
+import { RMULightHeatmap, initHeatmapListener } from "./src/heatmap.js";
 import "./src/ui.js";
 import "./src/light-sync.js";
 import "./src/vision-sync.js";
@@ -107,6 +107,18 @@ Hooks.once("init", async () => {
             // Step 4: Dispatch the results to the chat window.
             outputLightingToChat(sourceDoc, targetName, lightingState);
 
+            return true;
+        },
+    });
+
+    // Registers the Alt + L hotkey to toggle the GM diagnostic heatmap.
+    game.keybindings.register("rmu-lighting-vision", "toggleHeatmap", {
+        name: "rmu.keybinds.heatmap.name",
+        hint: "rmu.keybinds.heatmap.hint",
+        restricted: true, // Natively locks this hotkey so players cannot trigger it or see it in the menu
+        editable: [{ key: "KeyL", modifiers: [foundry.helpers.interaction.KeyboardManager.MODIFIER_KEYS.ALT] }],
+        onDown: () => {
+            RMULightHeatmap.toggle();
             return true;
         },
     });
