@@ -16,28 +16,19 @@
  * @param {Object} data - The data context provided to the sheet.
  */
 async function injectRMULightSettings(app, html, data) {
-    // 1. Root Extraction (Cross-Version Compatibility)
-    // Foundry is transitioning between old ApplicationV1 (jQuery) and new ApplicationV2 (HTMLElement).
-    // This extraction safely navigates both architectures to find the true DOM root.
     const root = app?.form ?? app?.element ?? (html.length === undefined ? html : html[0]);
     if (!root) return;
 
-    // Defensive Check: Prevent duplicate DOM injections.
-    // Foundry's render hooks can sometimes fire multiple times during tab switching or resizing.
     if (root.querySelector(".rmu-light-settings")) return;
 
-    // Dynamically determine the default fallback based on document type.
-    // Ambient Lights exist solely to emit light, so they default to 'Bright' (0).
-    // Tokens are usually just actors, so they default to 'None' (-1) to prevent everyone from glowing.
     const isToken = app.document.documentName === "Token";
     const defaultBase = isToken ? -1 : 0;
 
-    // Construct the data payload for the Handlebars template, pulling existing flags from the database.
     const templateData = {
         currentBase: app.document.getFlag("rmu-lighting-vision", "baseIllumination") ?? defaultBase,
         isMagical: app.document.getFlag("rmu-lighting-vision", "isMagical") ?? false,
         isUtter: app.document.getFlag("rmu-lighting-vision", "isUtter") ?? false,
-        // Localise the dropdown menu options
+        isConstant: app.document.getFlag("rmu-lighting-vision", "isConstant") ?? false,
         baseIlluminationOptions: {
             "-1": game.i18n.localize("rmu.light.tiers.none"),
             0: game.i18n.localize("rmu.light.tiers.bright"),
@@ -50,44 +41,92 @@ async function injectRMULightSettings(app, html, data) {
         },
     };
 
-    // Render the injected HTML asynchronously using the preloaded template
     const templatePath = "modules/rmu-lighting-vision/templates/light-settings.hbs";
     const rmuHtml = await foundry.applications.handlebars.renderTemplate(templatePath, templateData);
 
+    let injectionSuccessful = false;
+
     // 2. The Anchor Strategy
-    // We target known core Foundry form inputs to guarantee our custom UI appears
-    // exactly where the user expects it (right underneath the native radius settings).
-    // Ambient Lights use 'config.bright', Tokens use 'light.bright'.
     const anchorInput = root.querySelector('[name="config.bright"], [name="config.dim"], [name="light.bright"], [name="light.dim"]');
 
     if (anchorInput) {
-        // Travel up the DOM tree to find the wrapper group for that input
         const anchorGroup = anchorInput.closest(".form-group");
         if (anchorGroup) {
             anchorGroup.insertAdjacentHTML("afterend", rmuHtml);
-            return; // Successful injection!
+            injectionSuccessful = true;
         }
     }
 
     // 3. The Fallback Strategy
-    // If Foundry drastically renames its inputs in a future VTT update, the Anchor Strategy will fail.
-    // As a fallback, we aggressively target the entire 'Advanced' or 'Light' tab containers to
-    // ensure the RMU settings still appear *somewhere* usable rather than failing silently.
-    const targetTab = root.querySelector('[data-tab="advanced"], [data-application-part="advanced"], [data-tab="light"], [data-application-part="light"]');
-
-    if (targetTab) {
-        // Try to neatly append it after the last existing form-group in the tab
-        const groups = targetTab.querySelectorAll(".form-group");
-        if (groups.length) {
-            groups[groups.length - 1].insertAdjacentHTML("afterend", rmuHtml);
-        } else {
-            // Absolute last resort: just dump it at the bottom of the tab
-            targetTab.insertAdjacentHTML("beforeend", rmuHtml);
+    if (!injectionSuccessful) {
+        const targetTab = root.querySelector('[data-tab="advanced"], [data-application-part="advanced"], [data-tab="light"], [data-application-part="light"]');
+        if (targetTab) {
+            const groups = targetTab.querySelectorAll(".form-group");
+            if (groups.length) {
+                groups[groups.length - 1].insertAdjacentHTML("afterend", rmuHtml);
+            } else {
+                targetTab.insertAdjacentHTML("beforeend", rmuHtml);
+            }
+            injectionSuccessful = true;
         }
-    } else {
-        // If even the fallback fails, log a warning so developers know the UI architecture has changed
-        console.warn("RMU Lighting & Vision | UI Injection failed. Could not find anchor fields or fallback tabs.");
     }
+
+    // Abort if couldn't place the HTML anywhere
+    if (!injectionSuccessful) {
+        console.warn("RMU Lighting & Vision | UI Injection failed. Could not find anchor fields or fallback tabs.");
+        return;
+    }
+
+    // 4. Bind Frontend Mutually Exclusive UI Logic
+    setTimeout(() => {
+        const injectedFieldset = root.querySelector(".rmu-light-settings");
+        enforceMutuallyExclusiveCheckboxes(injectedFieldset);
+    }, 0);
+}
+
+/**
+ * Binds event listeners to ensure Environmental and Magical lights are mutually exclusive,
+ * and enforces the Utter implies Magical hierarchy.
+ * @param {HTMLElement} fieldset - The injected RMU settings fieldset.
+ */
+function enforceMutuallyExclusiveCheckboxes(fieldset) {
+    if (!fieldset) return;
+
+    const magCb = fieldset.querySelector(".rmu-magical-cb");
+    const uttCb = fieldset.querySelector(".rmu-utter-cb");
+    const conCb = fieldset.querySelector(".rmu-constant-cb");
+
+    if (!magCb || !uttCb || !conCb) return;
+
+    // --- RULE 1: Constant is mutually exclusive with Magical/Utter ---
+    conCb.addEventListener("change", (e) => {
+        if (e.target.checked) {
+            magCb.checked = false;
+            uttCb.checked = false;
+        }
+    });
+
+    const disableConstant = (e) => {
+        if (e.target.checked) conCb.checked = false;
+    };
+
+    magCb.addEventListener("change", disableConstant);
+    uttCb.addEventListener("change", disableConstant);
+
+    // --- RULE 2: Utter implies Magical ---
+    // If 'Utter' is checked, 'Magical' MUST be checked.
+    uttCb.addEventListener("change", (e) => {
+        if (e.target.checked) {
+            magCb.checked = true;
+        }
+    });
+
+    // If 'Magical' is unchecked, 'Utter' MUST be unchecked.
+    magCb.addEventListener("change", (e) => {
+        if (!e.target.checked) {
+            uttCb.checked = false;
+        }
+    });
 }
 
 // Bind the injection logic to Foundry's core rendering hooks

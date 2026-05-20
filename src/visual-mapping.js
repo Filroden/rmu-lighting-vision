@@ -206,8 +206,15 @@ function _applyVisualMappingCrusher(tier, isDarknessSource, currentBright, curre
 /**
  * Translates the absolute PIXI.js pixel limit into the scene's custom map scale.
  */
-function _getHardwareSafetyClamp() {
+function _getHardwareSafetyClamp(isConstant) {
     if (!canvas?.dimensions) return HARDWARE_LIMITS.DEFAULT_GRID_SAFE_UNITS;
+
+    // ENVIRONMENTAL EXCEPTION: If the GM wants a map-wide light, cap it at the
+    // maximum physical diagonal of the scene to prevent WebGL infinite-plane crashes.
+    if (isConstant) {
+        const unitsPerPixel = canvas.dimensions.distance / canvas.dimensions.size;
+        return canvas.dimensions.maxR * unitsPerPixel;
+    }
 
     const unitsPerPixel = canvas.dimensions.distance / canvas.dimensions.size;
     return HARDWARE_LIMITS.WEBGL_SAFE_TEXTURE_PIXELS * unitsPerPixel;
@@ -240,7 +247,7 @@ export function calculateLightRenderingData(tier, isMagical, isUtter, isDarkness
     bright = crushedRadii.bright;
     dim = crushedRadii.dim;
 
-    const safeMaxUnits = _getHardwareSafetyClamp();
+    const safeMaxUnits = _getHardwareSafetyClamp(isConstant);
 
     return {
         bright: Math.min(bright, safeMaxUnits),

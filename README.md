@@ -80,7 +80,13 @@ These talents do not colour the canvas, but act as a radar. They pierce physical
 ## How to Use
 
 1. **Configure Light Sources:** Open the configuration sheet for any Ambient Light or Token emitting light. Find the new **RMU Lighting Settings** section.
-2. **Set Base Illumination:** Select the light level present within the first 10 feet of the source (e.g., a Torch is *Dim Light*). The module will automatically degrade the light mathematically. Set the option if the source is magical. Depending on your game setting, this will make the magic light either act like a spotlight with no light spilling beyond the radius, or it will act like natural light but suffer 2 steps of light degradation at the first boundary before degrading normally.
+2. **Set Base Illumination:** Select the light level present within the first 10 feet of the source (e.g., a Torch is *Dim Light*). The module will automatically degrade the light mathematically.
+   - Set the option if the source is magical. Depending on your game setting, this will make the magic light either act like a spotlight with no light spilling beyond the radius, or it will act like natural light but suffer 2 steps of light degradation at the first boundary before degrading normally.
+   - Set the option if the source is Utterlight/Utterdark. Utter level lights defeat magical and mundane level light sources. Utterlight defeats Utterdark.
+   - Set the option if the source is an environmental light. Note that a light cannot be both environmental and magical/utter. This option will override the light degrading.
+
+   ![Light Configuration](https://github.com/Filroden/rmu-lighting-vision/blob/main/screenshots/light-configuration.png)
+
 3. **Automated Tokens:** Simply drag an Actor with recognised vision talents onto the canvas. The module will automatically configure their Vision Modes and Detection Ranges.
 4. **Calculate Penalties:** Select your token, target an enemy token or point to a location on the canvas, and press `Shift + L` to output the exact environmental modifiers to the chat.
 
@@ -141,6 +147,26 @@ Unlike vision, the engine cannot automatically guess the narrative intent behind
 
 **4. Uninstalling or Disabling**
 If you wish to stop using the module, open the **System & Migration** tab and click **Restore Foundry Defaults**. This will strip the custom RMU shaders from your tokens and restore your light radii exactly to where they were before the module was applied.
+
+## GM Tips for Simulating Moonlight, Starlight and Other Ambient Lighting
+
+When using Environmental Light Sources to simulate ambient weather (like a moonlit night or a glowing magical fog), you might notice that cliffs or tall walls cast massive, map-spanning shadows. This happens because Foundry VTT treats all light sources as radiating from a single specific point, rather than falling evenly from the sky.
+
+Here are two tips to make your ambient lighting look better:
+
+### Tip 1: The "Multiple Moons" Method (Fastest)
+
+If you are playing on a flat map and want to eliminate long shadows cast by trees or ruins, simply place your Environmental Light, copy it, and paste it into the four corners of your map. Because the light is hitting the walls from every angle, the point-source shadows cancel each other out. Building interiors and caves will remain dark, as they are enclosed by walls on all sides.
+
+### Tip 2: Using Scene Levels (Foundry v14+)
+
+For complex maps with cliffs, valleys, and tavern roofs, use Foundry v14's native Scene Levels:
+
+1. Slice your map into distinct elevation levels (e.g., a ground level, a cliff level, and a roof level).
+
+2. Place your Environmental Light and include it in all levels you want it to illuminate.
+
+Foundry will then allow the light to illuminate the tops of the cliffs and the valleys below, whilst walls will still block the ambient light from penetrating into caves and building interiors.
 
 ## Upcoming Features (Roadmap)
 

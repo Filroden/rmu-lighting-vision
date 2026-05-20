@@ -101,141 +101,172 @@ function getDegradedTier(distance, baseTier, isMagical, maxRadius) {
 }
 
 /**
+ * ============================================================================
+ * ENGINE HELPER FUNCTIONS (ILLUMINATION CALCULATION)
+ * ============================================================================
+ */
+
+/**
+ * Extracts the baseline ambient lighting of the entire scene from Foundry's environment.
+ * @returns {number} The base illumination tier of the canvas.
+ */
+function _getGlobalAmbientTier() {
+    if (!canvas?.scene) return 6; // Default to Pitch Black if no scene exists
+
+    const isGlobalLightEnabled = canvas.scene.environment?.globalLight?.enabled ?? canvas.scene.globalLight ?? false;
+    if (!isGlobalLightEnabled) return 6;
+
+    const darkness = canvas.scene.environment?.darknessLevel ?? canvas.scene.darkness;
+    if (darkness === 0) return 0;
+    if (darkness <= 0.25) return 1;
+    if (darkness <= 0.5) return 2;
+    if (darkness <= 0.75) return 4;
+
+    return 6;
+}
+
+/**
+ * Parses a raw Foundry Document (AmbientLight or Token) into a clean, unified RMU data object.
+ * @param {Document} lightDoc - The static or dynamic light source.
+ * @returns {Object} A standardised object containing pre-calculated radii and flags.
+ */
+function _extractLightData(lightDoc) {
+    const rmuFlags = lightDoc.flags?.["rmu-lighting-vision"] || {};
+    const baseIllumination = Number.parseInt(rmuFlags.baseIllumination ?? 0, 10);
+
+    let lightCenter;
+    let emitterRadius = 0;
+
+    if (lightDoc.documentName === "Token") {
+        lightCenter = lightDoc.object?.center || {
+            x: lightDoc.x + ((lightDoc.width || 1) * canvas.grid.size) / 2,
+            y: lightDoc.y + ((lightDoc.height || 1) * canvas.grid.size) / 2,
+        };
+        emitterRadius = lightDoc.object?.externalRadius ?? (Math.max(lightDoc.width || 1, lightDoc.height || 1) * canvas.grid.size) / 2;
+    } else {
+        lightCenter = { x: lightDoc.x, y: lightDoc.y };
+    }
+
+    const maxRadius = rmuFlags.magicalRadius ?? Math.max(lightDoc.config?.dim || 0, lightDoc.config?.bright || 0, lightDoc.light?.dim || 0, lightDoc.light?.bright || 0);
+    const isDarknessSource = baseIllumination >= 6 || lightDoc.config?.isDarkness === true || (lightDoc.config?.luminosity ?? lightDoc.light?.luminosity) < 0;
+
+    return {
+        isValid: !Number.isNaN(baseIllumination) && baseIllumination !== -1,
+        tier: baseIllumination,
+        isMagical: rmuFlags.isMagical ?? false,
+        isUtter: rmuFlags.isUtter ?? false,
+        isConstant: rmuFlags.isConstant ?? false,
+        isDarknessSource,
+        center: lightCenter,
+        emitterRadius,
+        maxRadius,
+    };
+}
+
+/**
+ * Processes a single light source, running geometry culling and raycasts before
+ * pushing it into the state buckets if it improves the scene's lighting.
+ */
+function _processLightSource(lightDoc, target, targetPoint, buckets) {
+    const data = _extractLightData(lightDoc);
+    if (!data.isValid) return;
+
+    // Calculate physical grid distance from the light edge to the target edge
+    const pixelDistance = getDistanceToTargetEdge(data.center, target, targetPoint);
+    const gridDistance = canvas.scene?.grid?.distance ?? 5;
+    const distance = Math.max(0, ((pixelDistance - data.emitterRadius) / canvas.grid.size) * gridDistance);
+
+    // --- PERFORMANCE OPTIMISATION: Initial Boundary Culling ---
+    if (data.isDarknessSource && distance > data.maxRadius) return;
+    if (!data.isDarknessSource && !data.isConstant && distance > 3000) return;
+
+    let calculatedTier = 6;
+
+    // --- PERFORMANCE OPTIMISATION: Lazy Evaluation ---
+    if (!data.isDarknessSource) {
+        if (data.isConstant) {
+            calculatedTier = distance <= data.maxRadius ? data.tier : 6;
+        } else {
+            calculatedTier = getDegradedTier(distance, data.tier, data.isMagical, data.maxRadius);
+        }
+
+        // Skip the raycast if this light is too weak to improve current buckets
+        if ((data.isUtter || data.isMagical) && calculatedTier >= 6) return;
+        if (data.isUtter && buckets.bestUtterlightTier !== null && calculatedTier >= buckets.bestUtterlightTier) return;
+        if (data.isMagical && !data.isUtter && buckets.bestMagicalTier !== null && calculatedTier >= buckets.bestMagicalTier) return;
+        if (!data.isMagical && !data.isUtter && calculatedTier >= buckets.bestMundaneTier) return;
+    }
+
+    // --- RAYCAST (Only fires if the light guarantees an improvement) ---
+    const blocksLight = CONFIG.Canvas.polygonBackends.light.testCollision(targetPoint, data.center, { type: "light", mode: "any" });
+    if (blocksLight) return;
+
+    // --- ASSIGN TO BUCKETS ---
+    if (data.isDarknessSource) {
+        if (data.isUtter) buckets.inUtterdark = true;
+        else buckets.inMagicalDarkness = true;
+        return;
+    }
+
+    if (data.isUtter) {
+        if (calculatedTier < 6 && (buckets.bestUtterlightTier === null || calculatedTier < buckets.bestUtterlightTier)) {
+            buckets.bestUtterlightTier = calculatedTier;
+        }
+    } else if (data.isMagical) {
+        if (calculatedTier < 6 && (buckets.bestMagicalTier === null || calculatedTier < buckets.bestMagicalTier)) {
+            buckets.bestMagicalTier = calculatedTier;
+        }
+    } else {
+        buckets.bestMundaneTier = calculatedTier;
+    }
+}
+
+/**
+ * Resolves the strict narrative order of operations for RMU absolute hierarchies.
+ */
+function _resolveHierarchyBuckets(buckets) {
+    if (buckets.bestUtterlightTier !== null) return buckets.bestUtterlightTier;
+    if (buckets.inUtterdark) return 6; // Pitch Black
+    if (buckets.bestMagicalTier !== null) return buckets.bestMagicalTier;
+    if (buckets.inMagicalDarkness) return 6; // Pitch Black
+    return buckets.bestMundaneTier;
+}
+
+/**
+ * ============================================================================
+ * MASTER ILLUMINATION ENGINE
+ * ============================================================================
+ */
+
+/**
  * Iterates over all light sources to find the best illumination for a specific point,
  * strictly enforcing the RMU Utter-tier and Magical hierarchies.
- * * @param {Object|TokenDocument|null} target - The token being observed (can be null for Heatmaps).
+ * @param {Object|TokenDocument|null} target - The token being observed (can be null for Heatmaps).
  * @param {Object} targetPoint - The exact {x, y} centre coordinates to measure.
  * @returns {number} The lowest (brightest) light tier affecting the point.
  */
 export function getBestIlluminationTier(target, targetPoint) {
-    // Step 1: Establish the baseline ambient lighting of the entire scene
-    let globalAmbientTier = 6;
-    if (canvas.scene) {
-        const isGlobalLightEnabled = canvas.scene.environment?.globalLight?.enabled ?? canvas.scene.globalLight ?? false;
-        if (isGlobalLightEnabled) {
-            const darkness = canvas.scene.environment?.darknessLevel ?? canvas.scene.darkness;
-            if (darkness === 0) globalAmbientTier = 0;
-            else if (darkness <= 0.25) globalAmbientTier = 1;
-            else if (darkness <= 0.5) globalAmbientTier = 2;
-            else if (darkness <= 0.75) globalAmbientTier = 4;
-        }
-    }
+    // 1. Initialise the tracking state with the scene's base ambient darkness
+    const buckets = {
+        inUtterdark: false,
+        inMagicalDarkness: false,
+        bestUtterlightTier: null,
+        bestMagicalTier: null,
+        bestMundaneTier: _getGlobalAmbientTier(),
+    };
 
-    // Step 2: Initialise the Tracker Buckets for the Absolute Hierarchy
-    let inUtterdark = false;
-    let inMagicalDarkness = false;
-    let bestUtterlightTier = null;
-    let bestMagicalTier = null;
-    let bestMundaneTier = globalAmbientTier;
-
-    // Compile all active light sources (both static ambient lights and dynamic token auras)
+    // 2. Compile all active light sources
     const activeAmbientLights = canvas.scene.lights.filter((l) => !l.hidden);
     const activeTokenLights = canvas.scene.tokens.filter((t) => !t.hidden && (t.light?.dim > 0 || t.light?.bright > 0));
     const allLightDocs = [...activeAmbientLights, ...activeTokenLights];
 
-    // Step 3: Iterate through every light source on the map
+    // 3. Process every light through the geometry and logic engine
     for (const lightDoc of allLightDocs) {
-        const rmuFlags = lightDoc.flags?.["rmu-lighting-vision"] || {};
-
-        const rawTier = rmuFlags.baseIllumination ?? 0;
-        const baseIllumination = Number.parseInt(rawTier, 10);
-        if (Number.isNaN(baseIllumination) || baseIllumination === -1) continue;
-
-        const isMagical = rmuFlags.isMagical ?? false;
-        const isUtter = rmuFlags.isUtter ?? false;
-
-        // Ensure mundane 'Pitch Black' (Tier 6) sources are correctly flagged as darkness boundaries
-        const isDarknessSource = baseIllumination >= 6 || lightDoc.config?.isDarkness === true || (lightDoc.config?.luminosity ?? lightDoc.light?.luminosity) < 0;
-
-        // Determine the epicentre and physical size of the light source
-        let lightCenter;
-        let emitterRadius = 0;
-        if (lightDoc.documentName === "Token") {
-            lightCenter = lightDoc.object?.center || {
-                x: lightDoc.x + ((lightDoc.width || 1) * canvas.grid.size) / 2,
-                y: lightDoc.y + ((lightDoc.height || 1) * canvas.grid.size) / 2,
-            };
-            emitterRadius = lightDoc.object?.externalRadius ?? (Math.max(lightDoc.width || 1, lightDoc.height || 1) * canvas.grid.size) / 2;
-        } else {
-            lightCenter = { x: lightDoc.x, y: lightDoc.y };
-        }
-
-        let maxRadius = rmuFlags.magicalRadius;
-        if (maxRadius === undefined) {
-            maxRadius = Math.max(lightDoc.config?.dim || 0, lightDoc.config?.bright || 0, lightDoc.light?.dim || 0, lightDoc.light?.bright || 0);
-        }
-
-        // Calculate physical grid distance from the light edge to the target edge
-        const pixelDistance = getDistanceToTargetEdge(lightCenter, target, targetPoint);
-        const gridDistance = canvas.scene?.grid?.distance ?? 5;
-        const distance = Math.max(0, ((pixelDistance - emitterRadius) / canvas.grid.size) * gridDistance);
-
-        // --- PERFORMANCE OPTIMISATION: Initial Boundary Culling ---
-        // Exclude lights that mathematically cannot reach the target point.
-        if (isDarknessSource && distance > maxRadius) continue;
-        if (!isDarknessSource && distance > 3000) continue; // Hard RMU degradation limit
-
-        // --- PERFORMANCE OPTIMISATION: Lazy Evaluation ---
-        // We calculate the theoretical power of the light BEFORE checking for physical wall collisions.
-        // Firing a WebGL raycast against wall geometry is the most expensive operation in this module.
-        // If the theoretical power is already weaker than what we have in our buckets, we skip the raycast entirely.
-        let calculatedTier = 6;
-        if (!isDarknessSource) {
-            calculatedTier = getDegradedTier(distance, baseIllumination, isMagical, maxRadius);
-
-            // Defensive Guard: Magical/Utter lights that degrade to Pitch Black lose their absolute priority.
-            // They should not suppress the glow of a local mundane torch.
-            if ((isUtter || isMagical) && calculatedTier >= 6) continue;
-
-            // Skip the raycast if this light cannot improve our current best tier
-            if (isUtter && bestUtterlightTier !== null && calculatedTier >= bestUtterlightTier) continue;
-            if (isMagical && !isUtter && bestMagicalTier !== null && calculatedTier >= bestMagicalTier) continue;
-            if (!isMagical && !isUtter && calculatedTier >= bestMundaneTier) continue;
-        }
-
-        // Step 4: The Raycast (Only fires if the light is guaranteed to improve the scene)
-        const blocksLight = CONFIG.Canvas.polygonBackends.light.testCollision(targetPoint, lightCenter, { type: "light", mode: "any" });
-        if (blocksLight) continue;
-
-        // Step 5: Assign the verified, unblocked light to the correct Hierarchy Bucket
-        if (isDarknessSource) {
-            if (isUtter) inUtterdark = true;
-            else inMagicalDarkness = true;
-            continue;
-        }
-
-        if (isUtter) {
-            if (calculatedTier < 6 && (bestUtterlightTier === null || calculatedTier < bestUtterlightTier)) {
-                bestUtterlightTier = calculatedTier;
-            }
-        } else if (isMagical) {
-            if (calculatedTier < 6 && (bestMagicalTier === null || calculatedTier < bestMagicalTier)) {
-                bestMagicalTier = calculatedTier;
-            }
-        } else {
-            bestMundaneTier = calculatedTier;
-        }
+        _processLightSource(lightDoc, target, targetPoint, buckets);
     }
 
-    // =========================================================
-    // THE ABSOLUTE HIERARCHY EVALUATION
-    // =========================================================
-    // This resolves the strict narrative order of operations for RMU magic logic.
-
-    // 1. Utterlight is supreme. It suppresses all darkness (both magical and mundane).
-    if (bestUtterlightTier !== null) return bestUtterlightTier;
-
-    // 2. Utterdark is absolute. It suppresses all non-Utter light.
-    if (inUtterdark) return 6; // Pitch Black
-
-    // 3. Magical Light overcomes normal Magical Darkness.
-    if (bestMagicalTier !== null) return bestMagicalTier;
-
-    // 4. Magical Darkness swallows all non-magical (mundane) light.
-    if (inMagicalDarkness) return 6; // Pitch Black
-
-    // 5. Normal Environment (Mundane light vs Mundane shadows).
-    return bestMundaneTier;
+    // 4. Resolve the final state
+    return _resolveHierarchyBuckets(buckets);
 }
 
 /**

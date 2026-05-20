@@ -38,13 +38,26 @@ function syncLightRadii(document, updateData) {
     let tier = Number.parseInt(rawTier, 10);
 
     let isMagical = rmuFlags.isMagical ?? currentFlags.isMagical ?? false;
-    const isUtter = rmuFlags.isUtter ?? currentFlags.isUtter ?? false;
+    let isUtter = rmuFlags.isUtter ?? currentFlags.isUtter ?? false;
     const isConstant = rmuFlags.isConstant ?? currentFlags.isConstant ?? false;
 
     // Foundry handles Token light data and AmbientLight data in slightly different object structures.
     const isToken = document.documentName === "Token";
     const currentLight = isToken ? document.light : document.config;
     const updatedLight = isToken ? updateData.light : updateData.config;
+
+    // --- UX AUTO-SYNC: Constant strips Magical properties ---
+    // A light cannot be an ambient environmental light and a magical point source simultaneously.
+    if (isConstant && (isMagical || isUtter)) {
+        isMagical = false;
+        isUtter = false;
+
+        // Push the correction to the update payload to scrub the database
+        updateData.flags = updateData.flags || {};
+        updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
+        updateData.flags["rmu-lighting-vision"].isMagical = false;
+        updateData.flags["rmu-lighting-vision"].isUtter = false;
+    }
 
     // --- UX AUTO-SYNC: Utter implies Magical ---
     // If a user ticks the 'Utterdark/light' box but forgets to tick 'Magical',
