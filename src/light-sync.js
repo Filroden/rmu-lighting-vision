@@ -69,8 +69,27 @@ function syncLightRadii(document, updateData) {
         updateData.flags["rmu-lighting-vision"].isMagical = true;
     }
 
-    // Abort if this is a standard, unconfigured Foundry light source
-    if (Number.isNaN(tier) || (tier === -1 && !isMagical && !isUtter)) return;
+    // Check if the RMU engine should be actively managing this light
+    const isRmuActive = !Number.isNaN(tier) && (tier !== -1 || isMagical || isUtter || isConstant);
+
+    if (!isRmuActive) {
+        // UX AUTO-SYNC: If the GM just disabled RMU settings (e.g., unchecked Environmental)
+        // and set the tier to "None", return the radii to zero to turn the light off.
+        const wasRmuActive = currentFlags.isConstant || currentFlags.isMagical || currentFlags.isUtter || (currentFlags.baseIllumination !== undefined && currentFlags.baseIllumination !== -1);
+
+        if (wasRmuActive) {
+            if (isToken) {
+                updateData.light = updateData.light || {};
+                updateData.light.bright = 0;
+                updateData.light.dim = 0;
+            } else {
+                updateData.config = updateData.config || {};
+                updateData.config.bright = 0;
+                updateData.config.dim = 0;
+            }
+        }
+        return;
+    }
 
     // Read-only check: Identify if this is a darkness source (Pitch Black tier, or a native Foundry negative light).
     const isDarknessSource = tier >= 6 || (updatedLight?.isDarkness ?? currentLight?.isDarkness ?? false) === true || (updatedLight?.luminosity ?? currentLight?.luminosity ?? 0) < 0;

@@ -1,6 +1,6 @@
-# RMU Lighting and Vision
+# Lighting and Vision for RMU
 
-![Latest Version](https://img.shields.io/badge/Version-2.1.0-blue)
+![Latest Version](https://img.shields.io/badge/Version-2.1.1-blue)
 ![Foundry Version](https://img.shields.io/badge/Foundry_VTT-v13_%7C_v14-orange)
 ![System](https://img.shields.io/badge/System-RMU-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
@@ -11,7 +11,7 @@
 
 ## Overview
 
-The **RMU Lighting and Vision** module implements the rules for lighting and visibility in Rolemaster Unified Core Law and applies vision talents to tokens.
+The **Lighting and Vision for RMU** module implements the rules for lighting and visibility in Rolemaster Unified Core Law and applies vision talents to tokens.
 
 Please install the correct version of the module:
 
@@ -212,3 +212,11 @@ if (lightingModule?.active && lightingModule.api) {
   "distance": 45.2
 }
 ```
+
+## Disclaimer and IP Notice
+
+The Lighting and Vision for RMU module is an unofficial, community-developed tool designed to enhance the Rolemaster Unified experience on Foundry Virtual Tabletop.
+
+This module is completely independent and is not affiliated with, endorsed, sponsored, or approved by Iron Crown Enterprises (ICE). "Rolemaster", "Rolemaster Unified", and the "RMU" acronym are trademarks of Iron Crown Enterprises.
+
+This project does not distribute any proprietary text, artwork, or core rulebook content belonging to ICE. It functions strictly as a mechanical, workflow, and user interface enhancement for the official RMU system on Foundry VTT. Any use of specific system terminology or mechanical values is for functional compatibility purposes only.
