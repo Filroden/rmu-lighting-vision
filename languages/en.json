@@ -53,7 +53,7 @@
 
     "rmu.warnings.selectOneTarget": "You must select only one token and target only one token to calculate lighting penalties between them.",
 
-    "rmu.chat.lightingReport": "RMU Lighting & Vision Report",
+    "rmu.chat.lightingReport": "Lighting & Vision For RMU Report",
     "rmu.chat.observer": "Observer",
     "rmu.chat.target": "Target",
     "rmu.chat.condition": "Lighting Condition",
