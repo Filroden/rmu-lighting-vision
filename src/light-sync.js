@@ -22,32 +22,39 @@ function syncLightRadii(document, updateData) {
 
     const isToken = document.documentName === "Token";
 
+    // 1. Native Foundry Object Expansion (Fixes the flat keys bug)
+    const expandedUpdate = foundry.utils.expandObject(updateData);
+
+    // 2. Safe Flag Extraction
+    const rmuFlags = expandedUpdate.flags?.["rmu-lighting-vision"] || {};
+    const currentFlags = document.flags?.["rmu-lighting-vision"] || {};
+
+    // 3. Identify if Visage is actively driving this update
+    const isVisageUpdate = expandedUpdate.flags?.visage?.activeStack !== undefined;
+
     // --- REDUNDANCY CHECK ---
-    // If neither the RMU flags nor the light object are being updated, avoid redundant calculations
-    // that could pollute unrelated token updates (like x/y movement) and cause visual flickering.
-    const hasRmuUpdate = foundry.utils.getProperty(updateData, "flags.rmu-lighting-vision") !== undefined;
-    const hasLightUpdate = isToken ? updateData.light !== undefined : updateData.config !== undefined;
-    const isSweep = updateData.flags?.["rmu-lighting-vision"]?.isSweep ?? false;
-    const isVisageUpdate = updateData.flags?.visage !== undefined || updateData.flags?.["rmu-lighting-vision"]?.isVisageOverride !== undefined;
+    const hasRmuUpdate = expandedUpdate.flags?.["rmu-lighting-vision"] !== undefined;
+    const hasLightUpdate = isToken ? expandedUpdate.light !== undefined : expandedUpdate.config !== undefined;
+    const isSweep = rmuFlags.isSweep ?? false;
 
     if (!hasRmuUpdate && !hasLightUpdate && !isSweep && !isVisageUpdate) {
         return;
     }
 
-    // Extract the incoming flags (if any) and the current database flags.
-    const rmuFlags = updateData.flags?.["rmu-lighting-vision"] || {};
-    const currentFlags = document.flags?.["rmu-lighting-vision"] || {};
-
-    // --- TRANSIENT MIGRATION & MODULE COMPATIBILITY FLAGS ---
-    // 'isSweep' is a temporary flag injected by the migration script
-    if (isSweep && updateData.flags?.["rmu-lighting-vision"]) {
-        delete updateData.flags["rmu-lighting-vision"].isSweep;
+    // --- TRANSIENT MIGRATION FLAGS ---
+    if (isSweep) {
+        if (updateData.flags?.["rmu-lighting-vision"]) delete updateData.flags["rmu-lighting-vision"].isSweep;
+        if (updateData["flags.rmu-lighting-vision"]) delete updateData["flags.rmu-lighting-vision"].isSweep;
+        if (updateData["flags.rmu-lighting-vision.isSweep"]) delete updateData["flags.rmu-lighting-vision.isSweep"];
     }
 
-    // Identify if Visage is applying a temporary visual mask
-    const isVisageMask = updateData.flags?.visage?.activeStack !== undefined || rmuFlags.isVisageOverride;
-    if (rmuFlags.isVisageOverride && updateData.flags?.["rmu-lighting-vision"]) {
-        delete updateData.flags["rmu-lighting-vision"].isVisageOverride;
+    // --- VISAGE BYPASS ---
+    // If Visage is asserting a native light overlay, completely bypass LVRMU math.
+    if (rmuFlags.isVisageOverride) {
+        if (updateData.flags?.["rmu-lighting-vision"]) delete updateData.flags["rmu-lighting-vision"].isVisageOverride;
+        if (updateData["flags.rmu-lighting-vision"]) delete updateData["flags.rmu-lighting-vision"].isVisageOverride;
+        if (updateData["flags.rmu-lighting-vision.isVisageOverride"]) delete updateData["flags.rmu-lighting-vision.isVisageOverride"];
+        return;
     }
 
     // Determine the intended illumination tier and magical properties.
@@ -113,7 +120,7 @@ function syncLightRadii(document, updateData) {
     // --- THE BACKUP SYSTEM ---
     const existingBackup = currentFlags.originalRadii;
     // Do not generate a permanent backup if Visage is currently applying a temporary mask
-    if (!existingBackup && !isVisageMask) {
+    if (!existingBackup && !isVisageUpdate) {
         updateData.flags = updateData.flags || {};
         updateData.flags["rmu-lighting-vision"] = updateData.flags["rmu-lighting-vision"] || {};
         updateData.flags["rmu-lighting-vision"].originalRadii = {
