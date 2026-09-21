@@ -30,7 +30,7 @@ async function injectRMULightSettings(app, html, data) {
         isUtter: app.document.getFlag("rmu-lighting-vision", "isUtter") ?? false,
         isConstant: app.document.getFlag("rmu-lighting-vision", "isConstant") ?? false,
         baseIlluminationOptions: {
-            "-1": game.i18n.localize("rmu.light.tiers.none"),
+            "-1": game.i18n.localize("rmu.light.tiers.none"), // Represents "not set", treating the light as core Foundry using the values for dim/bright radii
             0: game.i18n.localize("rmu.light.tiers.bright"),
             1: game.i18n.localize("rmu.light.tiers.uneven"),
             2: game.i18n.localize("rmu.light.tiers.dim"),

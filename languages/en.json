@@ -69,7 +69,7 @@
     "rmu.light.isUtter.name": "Is Utterlight/Utterdark?",
     "rmu.light.isUtter.hint": "Check this box to elevate the source to Utterlight or Utterdark (if set as a source of darkness). Utter level lights defeat magical and mundane light sources. Utterlight defeats Utterdark.",
 
-    "rmu.light.tiers.none": "None (Not a Light Source)",
+    "rmu.light.tiers.none": "Not an RMU Light",
     "rmu.light.tiers.bright": "Bright Light / No Shadows",
     "rmu.light.tiers.uneven": "Uneven Light / Light Shadows",
     "rmu.light.tiers.dim": "Dim Light / Medium Shadows",
